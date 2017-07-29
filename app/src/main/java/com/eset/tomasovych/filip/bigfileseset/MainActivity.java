@@ -25,16 +25,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        File[] files = new File(Environment.getExternalStorageDirectory().getPath()).listFiles();
-//        File[] files = new File(Environment.getRootDirectory().getPath()).listFiles();
+    }
 
-        Log.d(MainActivity.class.getSimpleName(), "ROOT DIR : " + Environment.getExternalStorageDirectory().getPath());
-        for (File file : files) {
-            Log.d(MainActivity.class.getSimpleName(), "File : " + file.getName() + " | Path : " + file.getAbsolutePath() + " | Size : " + file.length());
-        }
-
-
-
+    private void getFilesPermmision() {
 
     }
 

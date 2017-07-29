@@ -1,12 +1,15 @@
 package com.eset.tomasovych.filip.bigfileseset;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -25,10 +28,16 @@ public class DirectoryChooserActivity extends AppCompatActivity {
     private File mCurrentDir;
     private Stack<File[]> mFilesStack;
 
+    private static final int PERMISSION_READ_EXTERNAL_CODE = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_directory_chooser);
+
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[] {android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_CODE);
+        }
 
         mFilesStack = new Stack<>();
 
@@ -39,8 +48,20 @@ public class DirectoryChooserActivity extends AppCompatActivity {
 
         mAdapter = new DirectoryListAdapter(this, mFiles);
         mDirectoriesRecyclerView.setAdapter(mAdapter);
+
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSION_READ_EXTERNAL_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                mFiles = getDirectories(Environment.getExternalStorageDirectory().getPath());
+                mAdapter.swapFiles(mFiles);
+            } else {
+                finish();
+            }
+        }
+    }
 
     // get path of a clicked directory item and swap adapter with new files
     public void onDirectoryItemClick(View view) {
