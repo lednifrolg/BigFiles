@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\AppData\Local\Android\Sdk\extras\android\m2repository\com\android\support\support-annotations\26.0.0-alpha1\support-annotations-26.0.0-alpha1.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="023ee503b631f69511e335a061ea008f8da60f40">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\support-annotations-26.0.0-alpha1_6eccff4c334cd1b877bd16771e0aed5514702486\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\AppData\Local\Android\Sdk\extras\m2repository\com\android\support\constraint\constraint-layout-solver\1.0.2\constraint-layout-solver-1.0.2.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="b9cd8fc6bd15cb915735d34535db30ece0c44603">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\constraint-layout-solver-1.0.2_e727b75ca9a14230ff0d551fe5ec488a838eaadd\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\58f52d4a781f1e6ada0d82f06de68053e04aaff2\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="c4f45092eee6cdf1a5dbd597b2b6819be652ce2e">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_758d8cb5294b3f5bbd94eb320fae58059cd4e6fc\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\incremental-classes\debug\instant-run-bootstrap.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="5fbc3b5f419098eae8f5eddc3dac74657ae871d0">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10000\instant-run-bootstrap_ba0a4de800d691fd0cbeb621ebbfd1e180ea8ae1\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\42f6e36ee57652e486e268375236f1bf05b28b87\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="9935891f23923f39d002087085d9696568a9f657">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_c705de6c1c4c1cd3133b64924b01f6ffffc032d7\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\a11ee8c2d32eee6da96669093e7c546dbf6db3bc\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="44ee06abb66da30f5855e6bf54574e64cdcd982a">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_5a55792ecfb818fd457123850eeefd70903db21f\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\incremental-runtime-classes\debug\instant-run.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="3be78ebc2706b2e1fe2f12d5726887a92d6c183b">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10000\instant-run_bff0e5907d2cda91ac1433a4155aba2c63d1c1af\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\5534cf8c8f314aca48a2d9a332d95aa344f9cc14\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="47471eb19df288158b00b8d9cfa41bce7373f5cc">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_bce7fe2901dcd147aa43cdf3009013584376ebed\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.gradle\caches\modules-2\files-2.1\org.apache.commons\commons-io\1.3.2\b6dde38349ba9bb5e6ea6320531eae969985dae5\commons-io-1.3.2.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="b6dde38349ba9bb5e6ea6320531eae969985dae5">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\commons-io-1.3.2_2a43768e135677ffac646eaf22f730e2295ccbfa\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\f757654a241b5fdd180d2adf3fb6a8e46194c3d5\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="18d31838aa4fcc768a8a0516e22cc13b94655d89">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_b4a83d5e4891ffebbddb6c87cd60c95390082f60\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\576a39d96efa8b19a9aa484babf531ebd43925fd\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="952944218ecedea1554a513dec0c14d570642843">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_4c85c4843e15d320b2e5609ef13f73dbecb75a3e\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\5d68c721cf2485f6b922e6b786ed778450e1c053\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="d7c42c80f6509b9ea4db28ca7859ffae08ec5741">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_bc28e22914609dcff3fbe243d3835df3143eac96\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\6f1665f0f34f38857e4083de038fd05bcece2f31\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="2e92aa0163544a804a0b34f169ca61801770839a">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_0999e8e1591997593b7eca8b88c2ec27e9600f17\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\549f7e94ce088a37f11460e150e584d7634a3c02\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="fcd01fd11233459f546c437ec927e9b61bf7caf1">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_f66c253acbde1b7ea8787c6dcb89fe414973d677\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\5af54bc2745ea297b9d030e02e6de7cc0f1a42f8\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="8df0e365e40beb151bc42dee20817721a6cab7b0">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_00c547d18e31aa93fff01c352ff1a9ec0de1106c\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\8b1b7f9bdbf61d607866ecaf45851517dc0a4e64\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="88246166d5afb106f532f6e6deae683c66b42c89">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_23a21ed89cb5f9032cf4a0ce936e469427659d69\classes.dex" />
+    </item>
+
+</items>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">BigFilesEset</string>
+    <string name="select_current_directory">Select current directory</string>
+</resources>
