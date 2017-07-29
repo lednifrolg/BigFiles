@@ -5,6 +5,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -16,10 +18,14 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
 
     private Context mContext;
     private File[] mFiles;
+    private boolean mIsDirectoryChooser;
+    public boolean[] uncheckedDirectories;
 
-    public DirectoryListAdapter(Context context, File[] mFiles) {
+
+    public DirectoryListAdapter(Context context, File[] mFiles, boolean isDirectoryChooser) {
         this.mContext = context;
         this.mFiles = mFiles;
+        this.mIsDirectoryChooser = isDirectoryChooser;
     }
 
     @Override
@@ -31,7 +37,7 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
 
     // set up Directory list items
     @Override
-    public void onBindViewHolder(DirectoryViewHolder holder, int position) {
+    public void onBindViewHolder(DirectoryViewHolder holder, final int position) {
         holder.directoryName.setText(mFiles[position].getName());
         holder.directoryPath.setText(mFiles[position].getAbsolutePath());
         holder.directoryPath.setTag(mFiles[position].getAbsolutePath());
@@ -41,6 +47,17 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
             holder.directoryIcon.setImageResource(R.drawable.ic_folder_empty);
         } else {
             holder.directoryIcon.setImageResource(R.drawable.ic_folder);
+        }
+
+        if (!mIsDirectoryChooser) {
+            holder.directorySelectedCheckBox.setVisibility(View.VISIBLE);
+
+            holder.directorySelectedCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    uncheckedDirectories[position] = b;
+                }
+            });
         }
     }
 
@@ -52,23 +69,32 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
 
     @Override
     public int getItemCount() {
-        if (mFiles != null)
+        if (mFiles != null) {
+            uncheckedDirectories = new boolean[mFiles.length];
             return mFiles.length;
+        }
 
+        uncheckedDirectories = null;
         return 0;
     }
 
-    public class DirectoryViewHolder extends RecyclerView.ViewHolder {
+    class DirectoryViewHolder extends RecyclerView.ViewHolder {
 
         TextView directoryName;
         TextView directoryPath;
         ImageView directoryIcon;
+        CheckBox directorySelectedCheckBox;
 
-        public DirectoryViewHolder(View itemView) {
+        DirectoryViewHolder(View itemView) {
             super(itemView);
             directoryName = (TextView) itemView.findViewById(R.id.tv_directory_name);
             directoryPath = (TextView) itemView.findViewById(R.id.tv_directory_path);
             directoryIcon = (ImageView) itemView.findViewById(R.id.iv_folder_ic);
+            directorySelectedCheckBox = (CheckBox) itemView.findViewById(R.id.cb_directory_selected);
+
+            if (!mIsDirectoryChooser) {
+                itemView.setOnClickListener(null);
+            }
         }
     }
 }
