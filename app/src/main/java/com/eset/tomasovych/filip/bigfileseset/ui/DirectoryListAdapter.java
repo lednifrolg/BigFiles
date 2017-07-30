@@ -13,19 +13,22 @@ import android.widget.TextView;
 import com.eset.tomasovych.filip.bigfileseset.R;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.List;
 
 public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdapter.DirectoryViewHolder> {
 
     private Context mContext;
-    private File[] mFiles;
+    private List<File> mFiles;
     private boolean mIsDirectoryChooser;
-    public boolean[] uncheckedDirectories;
+    public HashMap<String, Boolean> directoriesStateMap;
 
 
-    public DirectoryListAdapter(Context context, File[] mFiles, boolean isDirectoryChooser) {
+    public DirectoryListAdapter(Context context, List<File> mFiles, boolean isDirectoryChooser) {
         this.mContext = context;
         this.mFiles = mFiles;
         this.mIsDirectoryChooser = isDirectoryChooser;
+        directoriesStateMap = new HashMap<>();
     }
 
     @Override
@@ -38,12 +41,12 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
     // set up Directory list items
     @Override
     public void onBindViewHolder(DirectoryViewHolder holder, final int position) {
-        holder.directoryName.setText(mFiles[position].getName());
-        holder.directoryPath.setText(mFiles[position].getAbsolutePath());
-        holder.directoryPath.setTag(mFiles[position].getAbsolutePath());
+        holder.directoryName.setText(mFiles.get(position).getName());
+        holder.directoryPath.setText(mFiles.get(position).getAbsolutePath());
+        holder.directoryPath.setTag(mFiles.get(position).getAbsolutePath());
 
         // Check if directory is empty
-        if (mFiles[position].isDirectory() && mFiles[position].list().length == 0) {
+        if (mFiles.get(position).isDirectory() && mFiles.get(position).list().length == 0) {
             holder.directoryIcon.setImageResource(R.drawable.ic_folder_empty);
         } else {
             holder.directoryIcon.setImageResource(R.drawable.ic_folder);
@@ -55,26 +58,36 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
             holder.directorySelectedCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    uncheckedDirectories[position] = b;
+                    directoriesStateMap.put(mFiles.get(position).getAbsolutePath(), b);
                 }
             });
         }
     }
 
     // change displayed files
-    public void swapFiles(File[] files) {
+    public void swapFiles(List<File> files) {
         mFiles = files;
         notifyDataSetChanged();
+    }
+
+    public void addFiles(List<File> files) {
+        if (mFiles == null) {
+            swapFiles(files);
+            return;
+        }
+
+        if (files != null && files.size() > 0) {
+            mFiles.addAll(files);
+            notifyDataSetChanged();
+        }
     }
 
     @Override
     public int getItemCount() {
         if (mFiles != null) {
-            uncheckedDirectories = new boolean[mFiles.length];
-            return mFiles.length;
+            return mFiles.size();
         }
 
-        uncheckedDirectories = null;
         return 0;
     }
 

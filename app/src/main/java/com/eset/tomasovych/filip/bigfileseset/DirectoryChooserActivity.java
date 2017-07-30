@@ -6,10 +6,14 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -17,18 +21,20 @@ import com.eset.tomasovych.filip.bigfileseset.ui.DirectoryListAdapter;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Stack;
 
-public class DirectoryChooserActivity extends AppCompatActivity {
+public class DirectoryChooserActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<File>> {
 
     public static final String EXTRA_DIRECTORY_PATH = "com.eset.tomasovych.filip.DIRECTORY_PATH";
+    private static final int PERMISSION_READ_EXTERNAL_CODE = 1;
+    private static final int LOADER_ID = 200;
     private RecyclerView mDirectoriesRecyclerView;
     private DirectoryListAdapter mAdapter;
-    private File[] mFiles;
+    private List<File> mFiles;
     private File mCurrentDir;
-    private Stack<File[]> mFilesStack;
-
-    private static final int PERMISSION_READ_EXTERNAL_CODE = 1;
+    private Stack<List<File>> mFilesStack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +42,7 @@ public class DirectoryChooserActivity extends AppCompatActivity {
         setContentView(R.layout.activity_directory_chooser);
 
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[] {android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_CODE);
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_CODE);
         }
 
         mFilesStack = new Stack<>();
@@ -44,19 +50,21 @@ public class DirectoryChooserActivity extends AppCompatActivity {
         mDirectoriesRecyclerView = (RecyclerView) findViewById(R.id.directories_list_recyclerView);
         mDirectoriesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        mFiles = getDirectories(Environment.getExternalStorageDirectory().getPath());
 
-        mAdapter = new DirectoryListAdapter(this, mFiles);
+        mAdapter = new DirectoryListAdapter(this, null, true);
         mDirectoriesRecyclerView.setAdapter(mAdapter);
 
+        Bundle extraPath = new Bundle();
+        extraPath.putString(EXTRA_DIRECTORY_PATH, Environment.getExternalStorageDirectory().getPath());
+        getSupportLoaderManager().initLoader(LOADER_ID, extraPath, this);
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == PERMISSION_READ_EXTERNAL_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                mFiles = getDirectories(Environment.getExternalStorageDirectory().getPath());
-                mAdapter.swapFiles(mFiles);
+                loadFiles(Environment.getExternalStorageDirectory().getPath());
             } else {
                 finish();
             }
@@ -69,8 +77,15 @@ public class DirectoryChooserActivity extends AppCompatActivity {
         String directoryPath = (String) dirPathTextView.getTag();
 
         mFilesStack.push(mFiles);
-        mFiles = getDirectories(directoryPath);
-        mAdapter.swapFiles(mFiles);
+
+        loadFiles(directoryPath);
+    }
+
+    // restart Loader with new directory path
+    private void loadFiles(String directoryPath) {
+        Bundle extraPath = new Bundle();
+        extraPath.putString(EXTRA_DIRECTORY_PATH, directoryPath);
+        getSupportLoaderManager().restartLoader(LOADER_ID, extraPath, this);
     }
 
 
@@ -92,17 +107,64 @@ public class DirectoryChooserActivity extends AppCompatActivity {
         } else {
             mFiles = mFilesStack.pop();
             mAdapter.swapFiles(mFiles);
-            mCurrentDir = mFiles[0].getParentFile();
+
+            mCurrentDir = mFiles.get(0).getParentFile();
             setTitle(mCurrentDir.getPath());
         }
     }
 
     // get directories from absolute path
-    private File[] getDirectories(String path) {
+    private List<File> getDirectories(String path) {
         mCurrentDir = new File(path);
-        setTitle(mCurrentDir.getPath());
-        return mCurrentDir.listFiles(new DirectoryFilter());
+        return Arrays.asList(mCurrentDir.listFiles(new DirectoryFilter()));
     }
+
+    @Override
+    public Loader<List<File>> onCreateLoader(int id, final Bundle args) {
+        return new AsyncTaskLoader<List<File>>(this) {
+
+            List<File> files = null;
+            String path = null;
+
+            @Override
+            protected void onStartLoading() {
+                path = args.getString(EXTRA_DIRECTORY_PATH, null);
+
+                if (files != null) {
+                    deliverResult(files);
+                } else {
+                    forceLoad();
+                }
+            }
+
+            @Override
+            public List<File> loadInBackground() {
+                mFiles = getDirectories(path);
+                return mFiles;
+            }
+
+            @Override
+            public void deliverResult(List<File> data) {
+                files = data;
+                super.deliverResult(data);
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(Loader<List<File>> loader, List<File> data) {
+        mAdapter.swapFiles(data);
+        if (mCurrentDir != null) {
+            setTitle(mCurrentDir.getPath());
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<List<File>> loader) {
+        mAdapter.swapFiles(null);
+        setTitle("");
+    }
+
 
     // File filter to only pass Directories
     private class DirectoryFilter implements FileFilter {
