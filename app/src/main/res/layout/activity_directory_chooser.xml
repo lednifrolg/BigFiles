@@ -14,7 +14,7 @@
         android:onClick="onSelectCurrentDirectoryClick"/>
 
     <android.support.v7.widget.RecyclerView
-        android:id="@+id/directories_list_recyclerView"
+        android:id="@+id/rv_directory_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
 

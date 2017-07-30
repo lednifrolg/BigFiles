@@ -13,7 +13,6 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -47,7 +46,7 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
 
         mFilesStack = new Stack<>();
 
-        mDirectoriesRecyclerView = (RecyclerView) findViewById(R.id.directories_list_recyclerView);
+        mDirectoriesRecyclerView = (RecyclerView) findViewById(R.id.rv_directory_list);
         mDirectoriesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
 

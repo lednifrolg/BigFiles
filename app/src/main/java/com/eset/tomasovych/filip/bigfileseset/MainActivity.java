@@ -1,10 +1,13 @@
 package com.eset.tomasovych.filip.bigfileseset;
 
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
@@ -22,7 +25,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.Set;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<File>> {
 
@@ -30,6 +32,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private static final int DIRECTORY_REQUEST_CODE = 93;
     private static final int LOADER_ID = 199;
     private RecyclerView mDirectoriesRecyclerView;
+    private RecyclerView mFilesRecyclerView;
     private DirectoryListAdapter mAdapter;
     private List<File> mSelectedDirectories;
     private int counter = 0;
@@ -39,8 +42,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mDirectoriesRecyclerView = (RecyclerView) findViewById(R.id.directories_list_recyclerView);
+        mDirectoriesRecyclerView = (RecyclerView) findViewById(R.id.rv_directory_list);
         mDirectoriesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        mFilesRecyclerView = (RecyclerView) findViewById(R.id.rv_file_list);
+        mFilesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         mAdapter = new DirectoryListAdapter(this, null, false);
         mDirectoriesRecyclerView.setAdapter(mAdapter);
@@ -52,25 +58,49 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     public void getDirectory(View view) {
         if (counter > 0) {
-            long startTime = SystemClock.elapsedRealtime();
 
-            FilesScanner filesScanner = new FilesScanner(mAdapter.directoriesStateMap);
-            final List<File> files = filesScanner.getFiles(mSelectedDirectories.get(0));
-            final PriorityQueue<File> priorityQueue = new PriorityQueue<>(3);
-
-            long endTime = SystemClock.elapsedRealtime();
-            long elapsedMilliSeconds = endTime - startTime;
-            double elapsedSeconds = elapsedMilliSeconds / 1000.0;
-
-
-
-            Log.d(MainActivity.class.getSimpleName(), "Files( " + files.size() + ") | Time( " + String.valueOf(elapsedSeconds) + ")");
 
             new AsyncTask<Void, Void, Void>() {
 
+
+
                 @Override
                 protected Void doInBackground(Void... voids) {
+                    NotificationManager notificationManager =
+                            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
+                    builder.setContentTitle("Picture Download")
+                            .setContentText("Download in progress")
+                            .setSmallIcon(R.drawable.ic_folder);
+
+
+
                     long startTime = SystemClock.elapsedRealtime();
+                    FilesScanner filesScanner = new FilesScanner(mAdapter.directoriesStateMap);
+
+                    builder.setProgress(0, 0, true);
+                    notificationManager.notify(1, builder.build());
+
+                    final List<File> files = new ArrayList<>();
+                    for (File selected : mSelectedDirectories) {
+                        files.addAll(filesScanner.getFiles(selected));
+                    }
+
+                    final PriorityQueue<File> priorityQueue = new PriorityQueue<>(3);
+
+                    long endTime = SystemClock.elapsedRealtime();
+                    long elapsedMilliSeconds = endTime - startTime;
+                    double elapsedSeconds = elapsedMilliSeconds / 1000.0;
+
+                    Log.d(MainActivity.class.getSimpleName(), "Files( " + files.size() + ") | Time( " + String.valueOf(elapsedSeconds) + ")");
+
+                    startTime = SystemClock.elapsedRealtime();
+
+                    int incr = 0;
+                    int counter = 0;
+
+                    builder.setProgress(100, incr, false);
+                    notificationManager.notify(1, builder.build());
 
                     for (int i = 0; i < 3; i++) {
                         priorityQueue.add(files.get(i));
@@ -81,7 +111,18 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                             priorityQueue.poll();
                             priorityQueue.add(files.get(i));
                         }
+
+                        if (counter % (files.size() / 10) == 0) {
+                            incr += 10;
+                            builder.setProgress(100, incr, false);
+                            notificationManager.notify(1, builder.build());
+                        }
+
+                        counter++;
                     }
+
+                    builder.setProgress(100, 100, false);
+                    notificationManager.notify(1, builder.build());
 
                     Iterator iterator = priorityQueue.iterator();
 
@@ -90,45 +131,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                         Log.d(MainActivity.class.getSimpleName(), "File : " + file.getAbsolutePath() + " | size : " + file.length());
                     }
 
-                    long endTime = SystemClock.elapsedRealtime();
-                    long elapsedMilliSeconds = endTime - startTime;
-                    double elapsedSeconds = elapsedMilliSeconds / 1000.0;
+                    endTime = SystemClock.elapsedRealtime();
+                    elapsedMilliSeconds = endTime - startTime;
+                    elapsedSeconds = elapsedMilliSeconds / 1000.0;
 
                     Log.d(MainActivity.class.getSimpleName(), "Time HEAP( " + String.valueOf(elapsedSeconds) + ")");
 
+                    builder.setContentText("Download complete")
+                            .setProgress(0,0,false);
+                    notificationManager.notify(1, builder.build());
 
                     return null;
                 }
             }.execute();
 
-            new AsyncTask<Void, Void, Void>() {
-
-                @Override
-                protected Void doInBackground(Void... voids) {
-                    List<File> files2 = new ArrayList<>(files);
-                    long startTime = SystemClock.elapsedRealtime();
-
-
-                    files2.sort(new Comparator<File>() {
-                        @Override
-                        public int compare(File file, File t1) {
-                            if (file.length() > t1.length())
-                                return 1;
-                            if (file.length() < t1.length())
-                                return -1;
-
-                            return 0;
-                        }
-                    });
-
-                    long endTime = SystemClock.elapsedRealtime();
-                    long elapsedMilliSeconds = endTime - startTime;
-                    double elapsedSeconds = elapsedMilliSeconds / 1000.0;
-
-                    Log.d(MainActivity.class.getSimpleName(), "Time SORT ( " + String.valueOf(elapsedSeconds) + ")");
-                    return null;
-                }
-            }.execute();
         }
         counter++;
         startActivityForResult(new Intent(this, DirectoryChooserActivity.class), DIRECTORY_REQUEST_CODE);

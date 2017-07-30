@@ -48,6 +48,15 @@
     </item>
     <item
         is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\763a07f217d7dc4c3a1a00f2dc4de5081d8b97a2\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="6a022bf00ccd0948a8180c505e8e458bbddd43a6">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_b68f0fcaba321bf63f312264aaf2c765473179f4\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
         jar="C:\Users\filip\.android\build-cache\a11ee8c2d32eee6da96669093e7c546dbf6db3bc\output\jars\classes.jar"
         jumboMode="true"
         optimize="true"
@@ -72,6 +81,15 @@
         revision="26.0.0"
         sha1="47471eb19df288158b00b8d9cfa41bce7373f5cc">
         <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_bce7fe2901dcd147aa43cdf3009013584376ebed\classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="C:\Users\filip\.android\build-cache\b3fbc229d9d4faca90790a4597c6c54aff9293e5\output\jars\classes.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.0"
+        sha1="cddcd0fb93bc70e27325f2f715b2710332004ebb">
+        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10\classes_b26c425f668864fcfd196ab114480fe659a688f0\classes.dex" />
     </item>
     <item
         is-multidex="true"
