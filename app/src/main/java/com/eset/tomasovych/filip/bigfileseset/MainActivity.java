@@ -3,6 +3,7 @@ package com.eset.tomasovych.filip.bigfileseset;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
@@ -17,6 +18,7 @@ import com.eset.tomasovych.filip.bigfileseset.ui.DirectoryListAdapter;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -50,14 +52,26 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     public void getDirectory(View view) {
         if (counter > 0) {
+            long startTime = SystemClock.elapsedRealtime();
+
             FilesScanner filesScanner = new FilesScanner(mAdapter.directoriesStateMap);
             final List<File> files = filesScanner.getFiles(mSelectedDirectories.get(0));
             final PriorityQueue<File> priorityQueue = new PriorityQueue<>(3);
+
+            long endTime = SystemClock.elapsedRealtime();
+            long elapsedMilliSeconds = endTime - startTime;
+            double elapsedSeconds = elapsedMilliSeconds / 1000.0;
+
+
+
+            Log.d(MainActivity.class.getSimpleName(), "Files( " + files.size() + ") | Time( " + String.valueOf(elapsedSeconds) + ")");
 
             new AsyncTask<Void, Void, Void>() {
 
                 @Override
                 protected Void doInBackground(Void... voids) {
+                    long startTime = SystemClock.elapsedRealtime();
+
                     for (int i = 0; i < 3; i++) {
                         priorityQueue.add(files.get(i));
                     }
@@ -76,6 +90,42 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                         Log.d(MainActivity.class.getSimpleName(), "File : " + file.getAbsolutePath() + " | size : " + file.length());
                     }
 
+                    long endTime = SystemClock.elapsedRealtime();
+                    long elapsedMilliSeconds = endTime - startTime;
+                    double elapsedSeconds = elapsedMilliSeconds / 1000.0;
+
+                    Log.d(MainActivity.class.getSimpleName(), "Time HEAP( " + String.valueOf(elapsedSeconds) + ")");
+
+
+                    return null;
+                }
+            }.execute();
+
+            new AsyncTask<Void, Void, Void>() {
+
+                @Override
+                protected Void doInBackground(Void... voids) {
+                    List<File> files2 = new ArrayList<>(files);
+                    long startTime = SystemClock.elapsedRealtime();
+
+
+                    files2.sort(new Comparator<File>() {
+                        @Override
+                        public int compare(File file, File t1) {
+                            if (file.length() > t1.length())
+                                return 1;
+                            if (file.length() < t1.length())
+                                return -1;
+
+                            return 0;
+                        }
+                    });
+
+                    long endTime = SystemClock.elapsedRealtime();
+                    long elapsedMilliSeconds = endTime - startTime;
+                    double elapsedSeconds = elapsedMilliSeconds / 1000.0;
+
+                    Log.d(MainActivity.class.getSimpleName(), "Time SORT ( " + String.valueOf(elapsedSeconds) + ")");
                     return null;
                 }
             }.execute();
