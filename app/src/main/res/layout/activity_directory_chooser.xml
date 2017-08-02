@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.eset.tomasovych.filip.bigfileseset.DirectoryChooserActivity">
+    tools:context="com.eset.tomasovych.filip.bigfileseset.ui.DirectoryChooserActivity">
 
     <Button
         android:id="@+id/bt_choose_directory"

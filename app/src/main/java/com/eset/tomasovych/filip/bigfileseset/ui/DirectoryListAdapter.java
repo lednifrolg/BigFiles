@@ -19,14 +19,14 @@ import java.util.List;
 public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdapter.DirectoryViewHolder> {
 
     private Context mContext;
-    private List<File> mFiles;
+    public List<File> mDirs;
     private boolean mIsDirectoryChooser;
     public HashMap<String, Boolean> directoriesStateMap;
 
 
     public DirectoryListAdapter(Context context, List<File> mFiles, boolean isDirectoryChooser) {
         this.mContext = context;
-        this.mFiles = mFiles;
+        this.mDirs = mFiles;
         this.mIsDirectoryChooser = isDirectoryChooser;
         directoriesStateMap = new HashMap<>();
     }
@@ -41,12 +41,12 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
     // set up Directory list items
     @Override
     public void onBindViewHolder(DirectoryViewHolder holder, final int position) {
-        holder.directoryName.setText(mFiles.get(position).getName());
-        holder.directoryPath.setText(mFiles.get(position).getAbsolutePath());
-        holder.directoryPath.setTag(mFiles.get(position).getAbsolutePath());
+        holder.directoryName.setText(mDirs.get(position).getName());
+        holder.directoryPath.setText(mDirs.get(position).getAbsolutePath());
+        holder.directoryPath.setTag(mDirs.get(position).getAbsolutePath());
 
         // Check if directory is empty
-        if (mFiles.get(position).isDirectory() && mFiles.get(position).list().length == 0) {
+        if (mDirs.get(position).isDirectory() && mDirs.get(position).list().length == 0) {
             holder.directoryIcon.setImageResource(R.drawable.ic_folder_empty);
         } else {
             holder.directoryIcon.setImageResource(R.drawable.ic_folder);
@@ -58,7 +58,7 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
             holder.directorySelectedCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    directoriesStateMap.put(mFiles.get(position).getAbsolutePath(), b);
+                    directoriesStateMap.put(mDirs.get(position).getAbsolutePath(), b);
                 }
             });
         }
@@ -66,26 +66,26 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
 
     // change displayed files
     public void swapFiles(List<File> files) {
-        mFiles = files;
+        mDirs = files;
         notifyDataSetChanged();
     }
 
     public void addFiles(List<File> files) {
-        if (mFiles == null) {
+        if (mDirs == null) {
             swapFiles(files);
             return;
         }
 
         if (files != null && files.size() > 0) {
-            mFiles.addAll(files);
+            mDirs.addAll(files);
             notifyDataSetChanged();
         }
     }
 
     @Override
     public int getItemCount() {
-        if (mFiles != null) {
-            return mFiles.size();
+        if (mDirs != null) {
+            return mDirs.size();
         }
 
         return 0;
