@@ -3,6 +3,7 @@ package com.eset.tomasovych.filip.bigfileseset.Utils;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 
 import com.eset.tomasovych.filip.bigfileseset.ui.MainActivity;
@@ -18,12 +19,18 @@ import java.util.PriorityQueue;
 
 public class FilesScanner {
 
+    public static final int MESSAGE_SORT = 1;
+    public static final int MESSAGE_LOAD = 2;
     private Handler mHandler;
     private int mMaxProgress = 10;
     private int mCurrentProgress = 0;
+    private int mRecursionCounter = 0;
+    private HashMap<String, Boolean> mSearchedDirectories;
+    private HashMap<String, Boolean> mDirectoriesStateMap;
 
     public FilesScanner(Handler handler) {
         this.mHandler = handler;
+        mSearchedDirectories = new HashMap<>();
     }
 
 
@@ -53,64 +60,72 @@ public class FilesScanner {
         return String.format("%.1f %sB", fileSize / Math.pow(unit, exp), pre);
     }
 
-    public List<File> getFiles(File root, HashMap<String, Boolean> directoriesStateMap) {
+    private boolean isDirectorySearched(File dir) {
+        if (mDirectoriesStateMap.containsKey(dir.getAbsolutePath()) && !mDirectoriesStateMap.get(dir.getAbsolutePath())) {
+            return true;
+        }
+
+        if (mSearchedDirectories.containsKey(dir.getAbsolutePath()) && mSearchedDirectories.get(dir.getAbsolutePath())) {
+            return true;
+        }
+
+        mSearchedDirectories.put(dir.getAbsolutePath(), true);
+
+        return false;
+    }
+
+    private List<File> getFiles(File root) {
+        if (mRecursionCounter % 20 == 0) {
+            updateProgress(root.getAbsolutePath());
+        }
+
+        mRecursionCounter++;
+
         File[] list = root.listFiles();
         List<File> files = new ArrayList<>();
 
         for (File f : list) {
             if (f.isDirectory()) {
-                if ((directoriesStateMap.containsKey(f.getAbsolutePath()) && !directoriesStateMap.get(f.getAbsolutePath()))) {
-                    // this directory is unchecked so its skipped
-                } else {
-                    files.addAll(getFiles(f, directoriesStateMap));
+
+                if (isDirectorySearched(f)) {
+                    continue;
                 }
+
+                files.addAll(getFiles(f));
             } else {
                 files.add(f);
             }
         }
-
         return files;
     }
 
-    synchronized private List<File> getFiles(List<File> directories, HashMap<String, Boolean> directoriesStateMap) {
+    synchronized private List<File> getFiles(List<File> directories) {
         List<File> files = new ArrayList<>();
 
-        int progressCycle = 1;
-        int increment = 1;
-
-        if (directories.size() > mMaxProgress / 2) {
-            progressCycle = (int) Math.ceil(directories.size() / (double) (mMaxProgress / 2));
-        } else if (directories.size() < mMaxProgress / 2) {
-            increment = (int) Math.ceil((mMaxProgress / 2) / (double) directories.size());
-        }
-
-        int inc = 0;
         for (File dir : directories) {
 
-            if (directoriesStateMap.containsKey(dir.getAbsolutePath()) && !directoriesStateMap.get(dir.getAbsolutePath())) {
+            if (isDirectorySearched(dir)) {
                 continue;
             }
 
-            File[] dirFiles = dir.listFiles();
-
-            for (File file : dirFiles) {
-                if (!file.isDirectory()) {
-                    files.add(file);
-                }
-            }
-
-            if (inc % progressCycle == 0) {
-                Log.d(FilesScanner.class.getSimpleName(), "Progress getFIles");
-                updateProgress(increment);
-            }
-            inc++;
+            files.addAll(getFiles(dir));
         }
 
         return files;
     }
 
     synchronized public List<File> getLargestFiles(int numberOfFiles, List<File> directories, HashMap<String, Boolean> directoriesStateMap) {
-        List<File> files = getFiles(directories, directoriesStateMap);
+        mSearchedDirectories.clear();
+        mDirectoriesStateMap = directoriesStateMap;
+
+        long startTime = SystemClock.elapsedRealtime();
+        List<File> files = getFiles(directories);
+        long endTime = SystemClock.elapsedRealtime();
+        long elapsedMilliSeconds = endTime - startTime;
+        double elapsedSeconds = elapsedMilliSeconds / 1000.0;
+
+        Log.d(FilesScanner.class.getSimpleName(), "Elapsed Seconds : " + elapsedSeconds);
+
 
         if (numberOfFiles >= files.size()) {
             updateProgress(mMaxProgress);
@@ -125,12 +140,11 @@ public class FilesScanner {
         int progressCycle = 1;
         int increment = 1;
 
-        if (files.size() > mMaxProgress / 2) {
-            progressCycle = (int) Math.ceil(files.size() / (double) (mMaxProgress / 2));
-        } else if (files.size() < mMaxProgress / 2) {
-            increment = (int) Math.ceil((mMaxProgress / 2) / (double) files.size());
+        if (files.size() > mMaxProgress) {
+            progressCycle = (int) Math.ceil(files.size() / (double) (mMaxProgress));
+        } else if (files.size() < mMaxProgress) {
+            increment = (int) Math.ceil((mMaxProgress) / (double) files.size());
         }
-
 
         final PriorityQueue<File> minHeap = new PriorityQueue<>(numberOfFiles);
         List<File> largestFiles = new ArrayList<>();
@@ -163,6 +177,7 @@ public class FilesScanner {
 
         updateProgress(largestFiles);
 
+        mCurrentProgress = 0;
 
         return largestFiles;
     }
@@ -171,27 +186,40 @@ public class FilesScanner {
         Bundle bundle = new Bundle();
         bundle.putInt(MainActivity.EXTRA_PROGRESS, mMaxProgress);
         bundle.putInt(MainActivity.EXTRA_PROGRESS_MAX, mMaxProgress);
-        bundle.putSerializable(MainActivity.EXTRA_LARGEST_FILES, (Serializable) largestFiles);
 
-        Message msg = new Message();
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        if (largestFiles.size() < 500) {
+            bundle.putSerializable(MainActivity.EXTRA_LARGEST_FILES, (Serializable) largestFiles);
+        }
+
+        sendMessage(bundle, MESSAGE_SORT);
     }
 
-    synchronized private void updateProgress(int progressValue) {
+    private void updateProgress(String dirName) {
+        Bundle bundle = new Bundle();
+        bundle.putString(MainActivity.EXTRA_DIR_CURRENT_PROGRESS, dirName);
+
+        sendMessage(bundle, MESSAGE_LOAD);
+    }
+
+    private void updateProgress(int progressValue) {
         Bundle bundle = new Bundle();
         bundle.putInt(MainActivity.EXTRA_PROGRESS, mCurrentProgress);
         bundle.putInt(MainActivity.EXTRA_PROGRESS_MAX, mMaxProgress);
 
-        Message msg = new Message();
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        sendMessage(bundle, MESSAGE_SORT);
 
         if (mCurrentProgress + progressValue > mMaxProgress) {
             mCurrentProgress = mMaxProgress;
         } else {
             mCurrentProgress += progressValue;
         }
+    }
+
+    private void sendMessage(Bundle bundle, int msgWhat) {
+        Message msg = new Message();
+        msg.what = msgWhat;
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
     }
 
 }

@@ -13,6 +13,7 @@ import android.widget.TextView;
 import com.eset.tomasovych.filip.bigfileseset.R;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -65,20 +66,22 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
         }
     }
 
-    // change displayed files
-    public void swapFiles(List<File> files) {
+    // change displayed Directories
+    public void swapDirs(List<File> files) {
         mDirs = files;
         notifyDataSetChanged();
     }
 
-    public void addFiles(List<File> files) {
+    public void addDir(File dir) {
         if (mDirs == null) {
-            swapFiles(files);
+            List<File> dirs = new ArrayList<>();
+            dirs.add(dir);
+            swapDirs(new ArrayList<File>(dirs));
             return;
         }
 
-        if (files != null && files.size() > 0) {
-            mDirs.addAll(files);
+        if (dir != null) {
+            mDirs.add(dir);
             notifyDataSetChanged();
         }
     }

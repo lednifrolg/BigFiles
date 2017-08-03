@@ -2,7 +2,8 @@
     <string name="app_name">BigFilesEset</string>
     <string name="select_current_directory">Select current directory</string>
     <string name="notification_title">Looking for biggest files</string>
-    <string name="notification_text_files">Getting files</string>
+    <string name="notification_text_files">Loading files</string>
     <string name="notification_text_sorting">Sorting files</string>
     <string name="notification_text_done">Biggest files found</string>
+    <string name="toast_search_cancel_message">Press back one more time to cancel Search</string>
 </resources>

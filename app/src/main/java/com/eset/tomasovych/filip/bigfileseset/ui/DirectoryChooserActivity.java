@@ -42,9 +42,6 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_directory_chooser);
 
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_CODE);
-        }
 
         if (savedInstanceState != null) {
             Log.d("DOPICE", "DOPICE");
@@ -60,9 +57,11 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
         mAdapter = new DirectoryListAdapter(this, null, true);
         mDirectoriesRecyclerView.setAdapter(mAdapter);
 
-        Bundle extraPath = new Bundle();
-        extraPath.putString(EXTRA_DIRECTORY_PATH, Environment.getExternalStorageDirectory().getPath());
-        getSupportLoaderManager().initLoader(LOADER_ID, extraPath, this);
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_CODE);
+        } else {
+            loadFiles(Environment.getExternalStorageDirectory().getPath());
+        }
     }
 
     @Override
@@ -118,7 +117,7 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
             finish();
         } else {
             mDirs = mDirsStack.pop();
-            mAdapter.swapFiles(mDirs);
+            mAdapter.swapDirs(mDirs);
 
             mCurrentDir = mDirs.get(0).getParentFile();
             setTitle(mCurrentDir.getPath());
@@ -165,7 +164,7 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
     @Override
     public void onLoadFinished(Loader<List<File>> loader, List<File> data) {
         mDirs = data;
-        mAdapter.swapFiles(mDirs);
+        mAdapter.swapDirs(mDirs);
         if (mCurrentDir != null) {
             setTitle(mCurrentDir.getPath());
         }
@@ -173,7 +172,7 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
 
     @Override
     public void onLoaderReset(Loader<List<File>> loader) {
-        mAdapter.swapFiles(null);
+        mAdapter.swapDirs(null);
         setTitle("");
     }
 

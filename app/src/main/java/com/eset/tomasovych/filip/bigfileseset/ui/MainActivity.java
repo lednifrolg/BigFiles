@@ -19,6 +19,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.eset.tomasovych.filip.bigfileseset.R;
 import com.eset.tomasovych.filip.bigfileseset.Utils.CurrentState;
@@ -31,21 +33,21 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<File>> {
 
-    public static final String EXTRA_SELECTED_DIRECTORY_PATH = "com.eset.tomasovych.filip.SELECTED_DIRECTORY_PATH";
     public static final String EXTRA_NUMBER_OF_FILES = "com.eset.tomasovych.filip.NUMBER_OF_FILES";
     public static final String EXTRA_LARGEST_FILES = "com.eset.tomasovych.filip.EXTRA_LARGEST_FILES";
     public static final String EXTRA_PROGRESS = "com.eset.tomasovych.filip.PROGRESS";
     public static final String EXTRA_PROGRESS_MAX = "com.eset.tomasovych.filip.PROGRESS_MAX";
     public static final String EXTRA_CURRENT_STATE = "com.eset.tomasovych.filip.CURRENT_STATE";
     public static final String EXTRA_DIRECTORIES = "com.eset.tomasovych.filip.DIRECTORIES";
+    public static final String EXTRA_DIR_CURRENT_PROGRESS = "com.eset.tomasovych.filip.EXTRA_DIR_CURRENT_PROGRESS";
     private static final int NOTIFICATION_ID = 302;
     private static final int DIRECTORY_REQUEST_CODE = 93;
-    private static final int DIRECTORIES_LOADER_ID = 300;
     private static final int FILES_LOADER_ID = 301;
+    private int mBackPressedCounter = 0;
     private EditText mNumberOFFilesEditText;
+    private TextView mLoadingDirectoryTextView;
     private RecyclerView mDirectoriesRecyclerView;
     private RecyclerView mFilesRecyclerView;
-    private ProgressBar mLoadingProgressBar;
     private ProgressBar mCalculatingProgressBar;
 
     private CurrentState mCurrentState;
@@ -54,42 +56,55 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private NotificationCompat.Builder mNotificationBuilder;
 
     private final Handler mHandler = new Handler() {
+
+        boolean isLoading = false;
+
         @Override
         public void handleMessage(Message msg) {
             Bundle bundle = msg.getData();
 
             if (bundle != null) {
-                int progress = msg.getData().getInt(EXTRA_PROGRESS);
-                int maxProgress = msg.getData().getInt(EXTRA_PROGRESS_MAX);
-                List<File> largestFiles = (List<File>) bundle.getSerializable(EXTRA_LARGEST_FILES);
+                if (msg.what == FilesScanner.MESSAGE_SORT) {
+                    isLoading = false;
 
-                if (mCalculatingProgressBar.getMax() != maxProgress) {
-                    mCalculatingProgressBar.setMax(maxProgress);
+                    int progress = msg.getData().getInt(EXTRA_PROGRESS);
+                    int maxProgress = msg.getData().getInt(EXTRA_PROGRESS_MAX);
+                    List<File> largestFiles = (List<File>) bundle.getSerializable(EXTRA_LARGEST_FILES);
+
+                    if (mCalculatingProgressBar.getMax() != maxProgress) {
+                        mCalculatingProgressBar.setMax(maxProgress);
+                    }
+
+                    if (progress <= maxProgress) {
+                        mCalculatingProgressBar.setProgress(progress);
+                    }
+
+                    showNotification(progress, maxProgress, largestFiles);
+                } else if (msg.what == FilesScanner.MESSAGE_LOAD) {
+
+                    if (!isLoading) {
+                        showNotification(0, 0, null);
+                        isLoading = true;
+                    }
+
+                    String loadingDir = bundle.getString(EXTRA_DIR_CURRENT_PROGRESS, "");
+                    mLoadingDirectoryTextView.setText(loadingDir);
                 }
-
-                if (progress <= maxProgress) {
-                    mCalculatingProgressBar.setProgress(progress);
-                }
-
-                showNotification(progress, maxProgress, largestFiles);
             }
         }
     };
     private DirectoryListAdapter mDirectoryListAdapter;
     private FileListAdapter mFIleFileListAdapter;
     private List<File> mSelectedDirectories;
-    private List<File> mAllDirectories;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        mFilesScanner = new FilesScanner(this);
-
         mNumberOFFilesEditText = (EditText) findViewById(R.id.et_files_number);
+        mLoadingDirectoryTextView = (TextView) findViewById(R.id.tv_loading_directory);
 
-        mLoadingProgressBar = (ProgressBar) findViewById(R.id.loading_progess_bar);
         mCalculatingProgressBar = (ProgressBar) findViewById(R.id.calculating_progress_bar);
 
         mDirectoriesRecyclerView = (RecyclerView) findViewById(R.id.rv_directory_list);
@@ -117,11 +132,31 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mFilesRecyclerView.setAdapter(mFIleFileListAdapter);
 
         mSelectedDirectories = new ArrayList<>();
-        mAllDirectories = new ArrayList<>();
-        getSupportLoaderManager().initLoader(DIRECTORIES_LOADER_ID, null, this);
         getSupportLoaderManager().initLoader(FILES_LOADER_ID, null, this);
 
         setUpSwipeToDeleteDirectory();
+        if (savedInstanceState != null) {
+            loadSavedState(savedInstanceState);
+        }
+    }
+
+    private void loadSavedState(Bundle savedInstanceState) {
+        mCurrentState = (CurrentState) savedInstanceState.getSerializable(EXTRA_CURRENT_STATE);
+        mSelectedDirectories = (List<File>) savedInstanceState.getSerializable(EXTRA_DIRECTORIES);
+
+        mDirectoryListAdapter.swapDirs(mSelectedDirectories);
+
+        switch (mCurrentState) {
+            case DIRECTORIES:
+                showDirs();
+                break;
+            case FILES:
+                showFiles();
+                break;
+            case FILES_LOADING:
+                showLoadingFiles();
+                break;
+        }
     }
 
     @Override
@@ -130,6 +165,26 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         outState.putSerializable(EXTRA_DIRECTORIES, (Serializable) mSelectedDirectories);
 
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (mCurrentState == CurrentState.FILES_LOADING) {
+            mBackPressedCounter++;
+
+            if (mBackPressedCounter == 2) {
+                getSupportLoaderManager().destroyLoader(FILES_LOADER_ID);
+                mBackPressedCounter = 0;
+            } else {
+                Toast.makeText(this, R.string.toast_search_cancel_message, Toast.LENGTH_SHORT).show();
+            }
+        } else if (mCurrentState == CurrentState.FILES && mSelectedDirectories != null && mSelectedDirectories.size() > 0) {
+            mBackPressedCounter = 0;
+            showDirs();
+        } else {
+            mBackPressedCounter = 0;
+            super.onBackPressed();
+        }
     }
 
     private void setUpSwipeToDeleteDirectory() {
@@ -142,8 +197,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = (int) viewHolder.itemView.getTag();
-                mAllDirectories.remove(position);
-                mDirectoryListAdapter.swapFiles(mAllDirectories);
+                mSelectedDirectories.remove(position);
+                mDirectoryListAdapter.swapDirs(mSelectedDirectories);
             }
         }).attachToRecyclerView(mDirectoriesRecyclerView);
     }
@@ -160,11 +215,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 String selectedDirectoryPath = data.getExtras().getString(DirectoryChooserActivity.EXTRA_DIRECTORY_PATH, null);
 
                 if (selectedDirectoryPath != null) {
-                    mSelectedDirectories.add(new File(selectedDirectoryPath));
-
-                    Bundle extraPath = new Bundle();
-                    extraPath.putString(EXTRA_SELECTED_DIRECTORY_PATH, selectedDirectoryPath);
-                    getSupportLoaderManager().restartLoader(DIRECTORIES_LOADER_ID, extraPath, this);
+                    File selectedDir = new File(selectedDirectoryPath);
+                    mSelectedDirectories.add(selectedDir);
+                    mDirectoryListAdapter.swapDirs(mSelectedDirectories);
+                    showDirs();
                 }
             }
         }
@@ -174,42 +228,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public Loader<List<File>> onCreateLoader(final int id, final Bundle args) {
         return new AsyncTaskLoader<List<File>>(this) {
 
-            List<File> dirs = null;
             List<File> files = null;
-            String path = null;
             int numberOfFiles;
             FilesScanner mFilesScanner = new FilesScanner(mHandler);
 
             @Override
             protected void onStartLoading() {
-                if (id == DIRECTORIES_LOADER_ID) {
-                    Log.d(MainActivity.class.getSimpleName(), "DIRECTORIES_LOADER_ID");
-
-                    if (args != null) {
-                        path = args.getString(EXTRA_SELECTED_DIRECTORY_PATH, null);
-                    }
-
-                    if (path == null) {
-                        return;
-                    }
-
-                    if (dirs != null) {
-                        deliverResult(dirs);
-                    } else {
-                        showLoadingDirs();
-                        forceLoad();
-                    }
-
-                } else if (id == FILES_LOADER_ID) {
-                    Log.d(MainActivity.class.getSimpleName(), "FILES_LOADER_ID");
-
+                if (id == FILES_LOADER_ID) {
                     if (args != null) {
                         numberOfFiles = args.getInt(EXTRA_NUMBER_OF_FILES, 0);
                     } else {
                         numberOfFiles = 0;
                         return;
                     }
-
 
                     if (files != null) {
                         deliverResult(files);
@@ -219,16 +250,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                         forceLoad();
                     }
                 }
-
             }
 
             @Override
             public List<File> loadInBackground() {
-                if (id == DIRECTORIES_LOADER_ID) {
-                    return FilesScanner.getSubdirectories(new File(path));
-                } else if (id == FILES_LOADER_ID) {
-
-                    return mFilesScanner.getLargestFiles(numberOfFiles, mDirectoryListAdapter.mDirs, mDirectoryListAdapter.directoriesStateMap);
+                if (id == FILES_LOADER_ID) {
+                    return mFilesScanner.getLargestFiles(numberOfFiles, mSelectedDirectories, mDirectoryListAdapter.directoriesStateMap);
                 }
 
                 return null;
@@ -236,10 +263,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             @Override
             public void deliverResult(List<File> data) {
-                if (id == DIRECTORIES_LOADER_ID) {
-                    dirs = data;
-                    super.deliverResult(data);
-                } else if (id == FILES_LOADER_ID) {
+                if (id == FILES_LOADER_ID) {
                     files = data;
                     super.deliverResult(data);
                 }
@@ -249,23 +273,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     public void onLoadFinished(Loader<List<File>> loader, List<File> data) {
-        if (loader.getId() == DIRECTORIES_LOADER_ID) {
-            mAllDirectories.addAll(data);
-            mDirectoryListAdapter.addFiles(mAllDirectories);
-            showDirs();
-        } else if (loader.getId() == FILES_LOADER_ID) {
+        if (loader.getId() == FILES_LOADER_ID) {
             mFIleFileListAdapter.swapFiles(data);
-            showFiles();
-        }
 
+            if (mCurrentState != CurrentState.DIRECTORIES) {
+                showFiles();
+            }
+        }
     }
 
     @Override
     public void onLoaderReset(Loader<List<File>> loader) {
-        if (loader.getId() == DIRECTORIES_LOADER_ID) {
-            mDirectoryListAdapter.swapFiles(null);
-        } else if (loader.getId() == FILES_LOADER_ID) {
+        if (loader.getId() == FILES_LOADER_ID) {
             mFIleFileListAdapter.swapFiles(null);
+            showDirs();
+            mCalculatingProgressBar.setProgress(0);
         }
     }
 
@@ -297,13 +319,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     .setAutoCancel(true);
         }
 
-        if (progress == 5) {
-            mNotificationBuilder.setContentText(getString(R.string.notification_text_sorting));
-        }
-
         Log.d(MainActivity.class.getSimpleName(), "Progress : " + progress);
+
         if (progress < maxProgress) {
+            if (progress == 0) {
+                mNotificationBuilder.setContentText(getString(R.string.notification_text_sorting));
+            }
+
             mNotificationBuilder.setProgress(maxProgress, progress, false);
+            mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+        } else if (progress == 0 && maxProgress == 0) {
+            mNotificationBuilder.setProgress(maxProgress, progress, true);
             mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
         } else {
             if (largestFiles != null) {
@@ -328,7 +354,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void showDirs() {
         mCalculatingProgressBar.setVisibility(View.INVISIBLE);
-        mLoadingProgressBar.setVisibility(View.INVISIBLE);
+        mLoadingDirectoryTextView.setVisibility(View.INVISIBLE);
 
         mFilesRecyclerView.setVisibility(View.INVISIBLE);
         mDirectoriesRecyclerView.setVisibility(View.VISIBLE);
@@ -336,35 +362,25 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mCurrentState = CurrentState.DIRECTORIES;
     }
 
-    private void showLoadingDirs() {
-        mCalculatingProgressBar.setVisibility(View.INVISIBLE);
-        mLoadingProgressBar.setVisibility(View.VISIBLE);
-
-        mFilesRecyclerView.setVisibility(View.INVISIBLE);
-        mDirectoriesRecyclerView.setVisibility(View.INVISIBLE);
-
-        mCurrentState = CurrentState.DIRECTORIES_LOADING;
-    }
-
     private void showFiles() {
+        Log.d(MainActivity.class.getSimpleName(), "showFiles");
         mCalculatingProgressBar.setVisibility(View.INVISIBLE);
-        mLoadingProgressBar.setVisibility(View.INVISIBLE);
+        mLoadingDirectoryTextView.setVisibility(View.INVISIBLE);
 
         mFilesRecyclerView.setVisibility(View.VISIBLE);
         mDirectoriesRecyclerView.setVisibility(View.INVISIBLE);
 
+        mCalculatingProgressBar.setProgress(0);
         mCurrentState = CurrentState.FILES;
     }
 
     private void showLoadingFiles() {
         mCalculatingProgressBar.setVisibility(View.VISIBLE);
-        mLoadingProgressBar.setVisibility(View.INVISIBLE);
+        mLoadingDirectoryTextView.setVisibility(View.VISIBLE);
 
         mFilesRecyclerView.setVisibility(View.INVISIBLE);
         mDirectoriesRecyclerView.setVisibility(View.INVISIBLE);
 
         mCurrentState = CurrentState.FILES_LOADING;
     }
-
-
 }
