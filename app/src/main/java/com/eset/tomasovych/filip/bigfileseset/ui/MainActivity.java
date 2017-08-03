@@ -14,12 +14,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 
 import com.eset.tomasovych.filip.bigfileseset.R;
+import com.eset.tomasovych.filip.bigfileseset.Utils.CurrentState;
 import com.eset.tomasovych.filip.bigfileseset.Utils.FilesScanner;
 
 import java.io.File;
@@ -29,11 +31,13 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<File>> {
 
-    public static final String EXTRA_SELECTED_DIRECTORY_PATH = "com.eset.tomasovych.filip.DSELECTED_DIRECTORY_PATH";
+    public static final String EXTRA_SELECTED_DIRECTORY_PATH = "com.eset.tomasovych.filip.SELECTED_DIRECTORY_PATH";
     public static final String EXTRA_NUMBER_OF_FILES = "com.eset.tomasovych.filip.NUMBER_OF_FILES";
     public static final String EXTRA_LARGEST_FILES = "com.eset.tomasovych.filip.EXTRA_LARGEST_FILES";
     public static final String EXTRA_PROGRESS = "com.eset.tomasovych.filip.PROGRESS";
     public static final String EXTRA_PROGRESS_MAX = "com.eset.tomasovych.filip.PROGRESS_MAX";
+    public static final String EXTRA_CURRENT_STATE = "com.eset.tomasovych.filip.CURRENT_STATE";
+    public static final String EXTRA_DIRECTORIES = "com.eset.tomasovych.filip.DIRECTORIES";
     private static final int NOTIFICATION_ID = 302;
     private static final int DIRECTORY_REQUEST_CODE = 93;
     private static final int DIRECTORIES_LOADER_ID = 300;
@@ -44,8 +48,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private ProgressBar mLoadingProgressBar;
     private ProgressBar mCalculatingProgressBar;
 
+    private CurrentState mCurrentState;
+
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder mNotificationBuilder;
+
     private final Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -71,6 +78,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private DirectoryListAdapter mDirectoryListAdapter;
     private FileListAdapter mFIleFileListAdapter;
     private List<File> mSelectedDirectories;
+    private List<File> mAllDirectories;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,8 +117,35 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mFilesRecyclerView.setAdapter(mFIleFileListAdapter);
 
         mSelectedDirectories = new ArrayList<>();
+        mAllDirectories = new ArrayList<>();
         getSupportLoaderManager().initLoader(DIRECTORIES_LOADER_ID, null, this);
         getSupportLoaderManager().initLoader(FILES_LOADER_ID, null, this);
+
+        setUpSwipeToDeleteDirectory();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putSerializable(EXTRA_CURRENT_STATE, mCurrentState);
+        outState.putSerializable(EXTRA_DIRECTORIES, (Serializable) mSelectedDirectories);
+
+        super.onSaveInstanceState(outState);
+    }
+
+    private void setUpSwipeToDeleteDirectory() {
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = (int) viewHolder.itemView.getTag();
+                mAllDirectories.remove(position);
+                mDirectoryListAdapter.swapFiles(mAllDirectories);
+            }
+        }).attachToRecyclerView(mDirectoriesRecyclerView);
     }
 
     public void getDirectory(View view) {
@@ -215,7 +250,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public void onLoadFinished(Loader<List<File>> loader, List<File> data) {
         if (loader.getId() == DIRECTORIES_LOADER_ID) {
-            mDirectoryListAdapter.addFiles(data);
+            mAllDirectories.addAll(data);
+            mDirectoryListAdapter.addFiles(mAllDirectories);
             showDirs();
         } else if (loader.getId() == FILES_LOADER_ID) {
             mFIleFileListAdapter.swapFiles(data);
@@ -296,6 +332,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         mFilesRecyclerView.setVisibility(View.INVISIBLE);
         mDirectoriesRecyclerView.setVisibility(View.VISIBLE);
+
+        mCurrentState = CurrentState.DIRECTORIES;
     }
 
     private void showLoadingDirs() {
@@ -304,6 +342,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         mFilesRecyclerView.setVisibility(View.INVISIBLE);
         mDirectoriesRecyclerView.setVisibility(View.INVISIBLE);
+
+        mCurrentState = CurrentState.DIRECTORIES_LOADING;
     }
 
     private void showFiles() {
@@ -312,6 +352,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         mFilesRecyclerView.setVisibility(View.VISIBLE);
         mDirectoriesRecyclerView.setVisibility(View.INVISIBLE);
+
+        mCurrentState = CurrentState.FILES;
     }
 
     private void showLoadingFiles() {
@@ -320,6 +362,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         mFilesRecyclerView.setVisibility(View.INVISIBLE);
         mDirectoriesRecyclerView.setVisibility(View.INVISIBLE);
+
+        mCurrentState = CurrentState.FILES_LOADING;
     }
+
 
 }

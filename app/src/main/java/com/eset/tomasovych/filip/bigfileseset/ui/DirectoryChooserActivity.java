@@ -13,6 +13,7 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -27,6 +28,7 @@ import java.util.Stack;
 public class DirectoryChooserActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<File>> {
 
     public static final String EXTRA_DIRECTORY_PATH = "com.eset.tomasovych.filip.DIRECTORY_PATH";
+    public static final String EXTRA_DIRECTORY_STACK = "com.eset.tomasovych.filip.DIRECTORY_STACK";
     private static final int PERMISSION_READ_EXTERNAL_CODE = 1;
     private static final int LOADER_ID = 200;
     private RecyclerView mDirectoriesRecyclerView;
@@ -44,11 +46,16 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL_CODE);
         }
 
-        mDirsStack = new Stack<>();
+        if (savedInstanceState != null) {
+            Log.d("DOPICE", "DOPICE");
+            mDirsStack = (Stack<List<File>>) savedInstanceState.getSerializable(EXTRA_DIRECTORY_STACK);
+            mCurrentDir = (File) savedInstanceState.getSerializable(EXTRA_DIRECTORY_PATH);
+        } else {
+            mDirsStack = new Stack<>();
+        }
 
         mDirectoriesRecyclerView = (RecyclerView) findViewById(R.id.rv_directory_list);
         mDirectoriesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-
 
         mAdapter = new DirectoryListAdapter(this, null, true);
         mDirectoriesRecyclerView.setAdapter(mAdapter);
@@ -58,6 +65,12 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
         getSupportLoaderManager().initLoader(LOADER_ID, extraPath, this);
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putSerializable(EXTRA_DIRECTORY_STACK, mDirsStack);
+        outState.putSerializable(EXTRA_DIRECTORY_PATH, mCurrentDir);
+        super.onSaveInstanceState(outState);
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

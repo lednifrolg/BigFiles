@@ -44,6 +44,7 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
         holder.directoryName.setText(mDirs.get(position).getName());
         holder.directoryPath.setText(mDirs.get(position).getAbsolutePath());
         holder.directoryPath.setTag(mDirs.get(position).getAbsolutePath());
+        holder.itemView.setTag(position);
 
         // Check if directory is empty
         if (mDirs.get(position).isDirectory() && mDirs.get(position).list().length == 0) {
