@@ -11,6 +11,7 @@ import com.eset.tomasovych.filip.bigfileseset.ui.MainActivity;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -119,7 +120,9 @@ public class FilesScanner {
         mDirectoriesStateMap = directoriesStateMap;
 
         long startTime = SystemClock.elapsedRealtime();
+
         List<File> files = getFiles(directories);
+
         long endTime = SystemClock.elapsedRealtime();
         long elapsedMilliSeconds = endTime - startTime;
         double elapsedSeconds = elapsedMilliSeconds / 1000.0;
@@ -146,7 +149,7 @@ public class FilesScanner {
             increment = (int) Math.ceil((mMaxProgress) / (double) files.size());
         }
 
-        final PriorityQueue<File> minHeap = new PriorityQueue<>(numberOfFiles);
+        final PriorityQueue<File> minHeap = new PriorityQueue<>(numberOfFiles, new FileComparator());
         List<File> largestFiles = new ArrayList<>();
 
         for (int i = 0; i < numberOfFiles; i++) {
@@ -155,7 +158,6 @@ public class FilesScanner {
             if (i % progressCycle == 0) {
                 updateProgress(increment);
             }
-
         }
 
         for (int i = numberOfFiles; i < files.size(); i++) {
@@ -220,6 +222,22 @@ public class FilesScanner {
         msg.what = msgWhat;
         msg.setData(bundle);
         mHandler.sendMessage(msg);
+    }
+
+    private class FileComparator implements Comparator<File> {
+
+        @Override
+        public int compare(File file, File file2) {
+            if (file.length() < file2.length()) {
+                return -1;
+            }
+
+            if (file.length() > file2.length()) {
+                return 1;
+            }
+
+            return 0;
+        }
     }
 
 }

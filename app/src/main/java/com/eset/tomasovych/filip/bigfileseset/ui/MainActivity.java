@@ -4,6 +4,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -119,7 +120,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             List<File> files = (List<File>) extras.getSerializable(EXTRA_LARGEST_FILES);
-            Log.d(MainActivity.class.getSimpleName(), "HELOOO : " + files.size());
             for (File f : files) {
                 Log.d(MainActivity.class.getSimpleName(), f.getAbsolutePath());
             }
@@ -293,7 +293,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     public void searchBiggestFiles(View view) {
-        if (mNumberOFFilesEditText.getText().toString().isEmpty()) {
+        if (mNumberOFFilesEditText.getText().toString().isEmpty() || mSelectedDirectories == null || mSelectedDirectories.isEmpty()) {
             return;
         }
 
@@ -316,6 +316,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mNotificationBuilder.setContentTitle(getString(R.string.notification_title))
                     .setContentText(getString(R.string.notification_text_files))
                     .setSmallIcon(R.drawable.ic_file)
+                    .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_file))
                     .setAutoCancel(true);
         }
 
