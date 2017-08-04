@@ -5,6 +5,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
 import com.eset.tomasovych.filip.bigfileseset.R;
@@ -19,14 +21,15 @@ public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FileVi
 
     private Context mContext;
     private List<File> mFiles;
-
-    public List<File> getFiles() {
-        return new ArrayList<>(mFiles);
-    }
+    private int mLastPosition = -1;
 
     public FileListAdapter(Context mContext, List<File> mFiles) {
         this.mContext = mContext;
         this.mFiles = mFiles;
+    }
+
+    public List<File> getFiles() {
+        return new ArrayList<>(mFiles);
     }
 
     @Override
@@ -41,10 +44,21 @@ public class FileListAdapter extends RecyclerView.Adapter<FileListAdapter.FileVi
         holder.fileName.setText(mFiles.get(position).getName());
         holder.filePath.setText(mFiles.get(position).getAbsolutePath());
         holder.fileSize.setText(FilesScanner.formatFileSize(mFiles.get(position).length()));
+
+        Animation animation = AnimationUtils.loadAnimation(mContext, (position > mLastPosition) ? R.anim.item_up_anim : R.anim.item_down_anim);
+        holder.itemView.startAnimation(animation);
+        mLastPosition = position;
+    }
+
+    @Override
+    public void onViewDetachedFromWindow(FileViewHolder holder) {
+        super.onViewDetachedFromWindow(holder);
+        holder.itemView.clearAnimation();
     }
 
     public void swapFiles(List<File> files) {
         mFiles = files;
+        mLastPosition = -1;
         notifyDataSetChanged();
     }
 

@@ -127,7 +127,7 @@ public class FilesScanner {
         long elapsedMilliSeconds = endTime - startTime;
         double elapsedSeconds = elapsedMilliSeconds / 1000.0;
 
-        Log.d(FilesScanner.class.getSimpleName(), "Elapsed Seconds : " + elapsedSeconds);
+        Log.d(FilesScanner.class.getSimpleName(), "Elapsed Seconds FILES : " + elapsedSeconds);
 
 
         if (numberOfFiles >= files.size()) {
@@ -140,49 +140,33 @@ public class FilesScanner {
             return null;
         }
 
-        int progressCycle = 1;
-        int increment = 1;
+        startTime = SystemClock.elapsedRealtime();
 
-        if (files.size() > mMaxProgress) {
-            progressCycle = (int) Math.ceil(files.size() / (double) (mMaxProgress));
-        } else if (files.size() < mMaxProgress) {
-            increment = (int) Math.ceil((mMaxProgress) / (double) files.size());
-        }
+        files = largestFilesSelection(files, numberOfFiles) ;
 
-        final PriorityQueue<File> minHeap = new PriorityQueue<>(numberOfFiles, new FileComparator());
-        List<File> largestFiles = new ArrayList<>();
+        endTime = SystemClock.elapsedRealtime();
+        elapsedMilliSeconds = endTime - startTime;
+        elapsedSeconds = elapsedMilliSeconds / 1000.0;
+        Log.d(FilesScanner.class.getSimpleName(), "Elapsed Seconds QUICK : " + elapsedSeconds);
 
-        for (int i = 0; i < numberOfFiles; i++) {
-            minHeap.add(files.get(i));
 
-            if (i % progressCycle == 0) {
-                updateProgress(increment);
-            }
-        }
+//        startTime = SystemClock.elapsedRealtime();
+//
+//        largestFilesMinPriorityQueue(files, numberOfFiles);
+//
+//        endTime = SystemClock.elapsedRealtime();
+//        elapsedMilliSeconds = endTime - startTime;
+//        elapsedSeconds = elapsedMilliSeconds / 1000.0;
+//        Log.d(FilesScanner.class.getSimpleName(), "Elapsed Seconds HEAP : " + elapsedSeconds);
 
-        for (int i = numberOfFiles; i < files.size(); i++) {
-            if (files.get(i).length() > minHeap.peek().length()) {
-                minHeap.poll();
-                minHeap.add(files.get(i));
-            }
 
-            if (i % progressCycle == 0) {
-                updateProgress(increment);
-            }
-        }
-
-        Iterator iterator = minHeap.iterator();
-
-        while (iterator.hasNext()) {
-            largestFiles.add((File) iterator.next());
-        }
-
-        updateProgress(largestFiles);
+        updateProgress(files);
 
         mCurrentProgress = 0;
 
-        return largestFiles;
+        return files;
     }
+
 
     private void updateProgress(List<File> largestFiles) {
         Bundle bundle = new Bundle();
@@ -204,17 +188,17 @@ public class FilesScanner {
     }
 
     private void updateProgress(int progressValue) {
+        if (mCurrentProgress + progressValue >= mMaxProgress) {
+            mCurrentProgress = mMaxProgress;
+        } else {
+            mCurrentProgress += progressValue;
+        }
+
         Bundle bundle = new Bundle();
         bundle.putInt(MainActivity.EXTRA_PROGRESS, mCurrentProgress);
         bundle.putInt(MainActivity.EXTRA_PROGRESS_MAX, mMaxProgress);
 
         sendMessage(bundle, MESSAGE_SORT);
-
-        if (mCurrentProgress + progressValue > mMaxProgress) {
-            mCurrentProgress = mMaxProgress;
-        } else {
-            mCurrentProgress += progressValue;
-        }
     }
 
     private void sendMessage(Bundle bundle, int msgWhat) {
@@ -222,6 +206,95 @@ public class FilesScanner {
         msg.what = msgWhat;
         msg.setData(bundle);
         mHandler.sendMessage(msg);
+    }
+
+    private List<File> largestFilesSelection(List<File> files, int numberOfFiles) {
+        int from = 0, to = files.size() - 1;
+
+        // if from == to we reached the kth element
+        while (from < to) {
+            int r = from, w = to;
+            long mid = files.get((r + w) / 2).length();
+
+            // stop if the reader and writer meets
+            while (r < w) {
+
+                if (files.get(r).length() <= mid) { // put the large values at the end
+                    File tmp = files.get(w);
+                    files.set(w, files.get(r));
+                    files.set(r, tmp);
+                    w--;
+                } else { // the value is smaller than the pivot, skip
+                    r++;
+                }
+            }
+
+            // if we stepped up (r++) we need to step one down
+            if (files.get(r).length() < mid)
+                r--;
+
+            // the r pointer is on the end of the first k elements
+            if (numberOfFiles <= r) {
+                to = r;
+            } else {
+                from = r + 1;
+            }
+        }
+
+        List<File> largestFiles = new ArrayList<>();
+
+        for (File file : files) {
+            if (file.length() > files.get(numberOfFiles).length()) {
+                largestFiles.add(file);
+            }
+
+            if (files.size() == numberOfFiles) {
+                break;
+            }
+        }
+
+        return largestFiles;
+    }
+
+    private List<File> largestFilesMinPriorityQueue(List<File> files, int numberOfFiles) {
+        int progressCycle = 1;
+        int increment = 1;
+
+        if (files.size() > mMaxProgress) {
+            progressCycle = (int) Math.ceil(files.size() / (double) (mMaxProgress));
+        } else if (files.size() < mMaxProgress) {
+            increment = (int) Math.ceil((mMaxProgress) / (double) files.size());
+        }
+
+        final PriorityQueue<File> minHeap = new PriorityQueue<>(numberOfFiles, new FileComparator());
+
+        for (int i = 0; i < numberOfFiles; i++) {
+            minHeap.add(files.get(i));
+
+            if (i % progressCycle == 0) {
+                updateProgress(increment);
+            }
+        }
+
+        for (int i = numberOfFiles; i < files.size(); i++) {
+            if (files.get(i).length() > minHeap.peek().length()) {
+                minHeap.poll();
+                minHeap.add(files.get(i));
+            }
+
+            if (i % progressCycle == 0) {
+                updateProgress(increment);
+            }
+        }
+
+        Iterator iterator = minHeap.iterator();
+        files.clear();
+
+        while (iterator.hasNext()) {
+            files.add((File) iterator.next());
+        }
+
+        return files;
     }
 
     private class FileComparator implements Comparator<File> {

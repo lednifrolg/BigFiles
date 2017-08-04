@@ -6,4 +6,11 @@
     <string name="notification_text_sorting">Sorting files</string>
     <string name="notification_text_done">Biggest files found</string>
     <string name="toast_search_cancel_message">Press back one more time to cancel Search</string>
+    <string name="toast_sort_running">Files are already being sorted</string>
+    <string name="number_of_files_hint">Number of files</string>
+    <string name="choose_dir_button_text">Choose Dir</string>
+    <string name="number_too_big_error">Number is too big</string>
+    <string name="number_too_small_error">Number is too small</string>
+    <string name="empty_input_error">Empty input</string>
+    <string name="toast_no_directories">No directories selected</string>
 </resources>

@@ -19,7 +19,7 @@
             android:src="@drawable/ic_file" />
 
         <LinearLayout
-            android:layout_width="220dp"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:orientation="vertical">
@@ -34,6 +34,7 @@
                 android:id="@+id/tv_file_path"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textSize="12sp"
                 tools:text="/storage/emulated/0/File.txt" />
 
         </LinearLayout>
@@ -42,7 +43,9 @@
             android:id="@+id/tv_file_size"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_gravity="bottom"
+            android:layout_marginBottom="10dp"
+            android:textSize="12sp"
             tools:text="20 MB" />
 
     </LinearLayout>
@@ -50,5 +53,5 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@android:color/darker_gray" />
+        android:background="@color/colorPrimaryLight" />
 </LinearLayout>
