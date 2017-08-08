@@ -1,6 +1,7 @@
 package com.eset.tomasovych.filip.bigfileseset.ui;
 
 import android.content.Context;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -46,6 +47,7 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
         holder.directoryPath.setText(mDirs.get(position).getAbsolutePath());
         holder.directoryPath.setTag(mDirs.get(position).getAbsolutePath());
         holder.itemView.setTag(position);
+        holder.selectDirectoryFab.setTag(mDirs.get(position).getAbsolutePath());
 
         // Check if directory is empty
         if (mDirs.get(position).isDirectory() && mDirs.get(position).list().length == 0) {
@@ -56,6 +58,7 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
 
         if (!mIsDirectoryChooser) {
             holder.directorySelectedCheckBox.setVisibility(View.VISIBLE);
+            holder.selectDirectoryFab.setVisibility(View.GONE);
 
             holder.directorySelectedCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -101,13 +104,16 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
         TextView directoryPath;
         ImageView directoryIcon;
         CheckBox directorySelectedCheckBox;
+        FloatingActionButton selectDirectoryFab;
 
         DirectoryViewHolder(View itemView) {
             super(itemView);
             directoryName = (TextView) itemView.findViewById(R.id.tv_directory_name);
             directoryPath = (TextView) itemView.findViewById(R.id.tv_directory_path);
             directoryIcon = (ImageView) itemView.findViewById(R.id.iv_folder_ic);
+
             directorySelectedCheckBox = (CheckBox) itemView.findViewById(R.id.cb_directory_selected);
+            selectDirectoryFab = (FloatingActionButton) itemView.findViewById(R.id.fab_select_directory);
 
             if (!mIsDirectoryChooser) {
                 itemView.setOnClickListener(null);

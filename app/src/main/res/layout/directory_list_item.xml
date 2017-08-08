@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -19,6 +20,16 @@
             android:layout_marginTop="16dp"
             android:checked="true"
             android:visibility="gone" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fab_select_directory"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:scaleType="center"
+            android:layout_gravity="center"
+            android:layout_marginStart="16dp"
+            app:srcCompat="@drawable/ic_add"
+            android:onClick="onSelectDirectoryFabClick"/>
 
         <ImageView
             android:id="@+id/iv_folder_ic"
@@ -50,7 +61,6 @@
 
 
     </LinearLayout>
-
 
     <View
         android:layout_width="match_parent"

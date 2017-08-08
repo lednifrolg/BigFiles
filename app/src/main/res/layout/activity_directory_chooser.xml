@@ -8,10 +8,11 @@
 
     <Button
         android:id="@+id/bt_choose_directory"
-        android:text="@string/select_current_directory"
+        style="@style/Widget.AppCompat.Button.Colored"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="onSelectCurrentDirectoryClick"/>
+        android:onClick="onSelectCurrentDirectoryClick"
+        android:text="@string/select_current_directory" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rv_directory_list"
@@ -19,8 +20,6 @@
         android:layout_height="match_parent"
 
         />
-
-
 
 
 </LinearLayout>

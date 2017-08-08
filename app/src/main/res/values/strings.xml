@@ -13,4 +13,6 @@
     <string name="number_too_small_error">Number is too small</string>
     <string name="empty_input_error">Empty input</string>
     <string name="toast_no_directories">No directories selected</string>
+    <string name="notification_canceled_message">File searching cancelled</string>
+    <string name="menu_about_label">About</string>
 </resources>

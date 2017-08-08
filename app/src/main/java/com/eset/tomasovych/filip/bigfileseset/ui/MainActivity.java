@@ -13,6 +13,7 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.LinearLayoutManager;
@@ -20,6 +21,9 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -38,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<File>> {
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     public static final String EXTRA_NUMBER_OF_FILES = "com.eset.tomasovych.filip.NUMBER_OF_FILES";
     public static final String EXTRA_LARGEST_FILES = "com.eset.tomasovych.filip.EXTRA_LARGEST_FILES";
@@ -46,9 +51,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public static final String EXTRA_CURRENT_STATE = "com.eset.tomasovych.filip.CURRENT_STATE";
     public static final String EXTRA_DIRECTORIES = "com.eset.tomasovych.filip.DIRECTORIES";
     public static final String EXTRA_DIR_CURRENT_PROGRESS = "com.eset.tomasovych.filip.EXTRA_DIR_CURRENT_PROGRESS";
+    private static final int MESSAGE_CANCEL = -1;
     private static final int NOTIFICATION_ID = 302;
     private static final int DIRECTORY_REQUEST_CODE = 93;
     private static final int FILES_LOADER_ID = 301;
+    private FilesScanner mFilesScanner;
     private int mBackPressedCounter = 0;
     private TextInputLayout mTextInputLayout;
     private EditText mNumberOFFilesEditText;
@@ -70,6 +77,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         @Override
         public void handleMessage(Message msg) {
+            if (msg.what == MESSAGE_CANCEL) {
+                cancelNotificationLoading();
+                return;
+            }
+
             Bundle bundle = msg.getData();
 
             if (bundle != null) {
@@ -98,7 +110,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
                     if (!isLoading) {
                         showNotification(0, 0, null);
-                        mCalculatingProgressBar.setIndeterminate(true);
+
+                        if (!mCalculatingProgressBar.isIndeterminate()) {
+                            mCalculatingProgressBar.setIndeterminate(true);
+
+                        }
                         isLoading = true;
                     }
 
@@ -108,6 +124,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             }
         }
     };
+
+
     private DirectoryListAdapter mDirectoryListAdapter;
     private FileListAdapter mFIleFileListAdapter;
     private List<File> mSelectedDirectories;
@@ -116,6 +134,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mFilesScanner = new FilesScanner(mHandler);
 
         mFab = (FloatingActionButton) findViewById(R.id.fab_search);
 
@@ -139,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (extras != null) {
             List<File> files = (List<File>) extras.getSerializable(EXTRA_LARGEST_FILES);
             for (File f : files) {
-                Log.d(MainActivity.class.getSimpleName(), f.getAbsolutePath());
+                Log.d(TAG, f.getAbsolutePath());
             }
             mFIleFileListAdapter = new FileListAdapter(this, files);
             showFiles();
@@ -211,7 +231,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             if (mBackPressedCounter == 2) {
                 getSupportLoaderManager().destroyLoader(FILES_LOADER_ID);
+                showDirs();
                 mBackPressedCounter = 0;
+
+                Message cancelNotification = new Message();
+                cancelNotification.what = MESSAGE_CANCEL;
+                mHandler.sendMessage(cancelNotification);
             } else {
                 Toast.makeText(this, R.string.toast_search_cancel_message, Toast.LENGTH_SHORT).show();
             }
@@ -222,6 +247,38 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mBackPressedCounter = 0;
             super.onBackPressed();
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.menu.default_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_about:
+                showAboutDialog();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void showAboutDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setMessage("Big File Finder for Android\n" +
+                "Eset Android developer challenge\n" +
+                "Created by Filip Tomasovych, August 2017")
+                .setTitle("About").setIcon(R.drawable.ic_about_black);
+
+        builder.setPositiveButton("Close", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private void setUpSwipeToDeleteDirectory() {
@@ -267,7 +324,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             List<File> files = null;
             int numberOfFiles;
-            FilesScanner mFilesScanner = new FilesScanner(mHandler);
 
             @Override
             protected void onStartLoading() {
@@ -341,7 +397,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             numberOfFiles = Integer.valueOf(mNumberOFFilesEditText.getText().toString());
         } catch (NumberFormatException ex) {
             mTextInputLayout.setError(getString(R.string.number_too_big_error));
-            Log.e(MainActivity.class.getSimpleName(), ex.toString());
+            Log.e(TAG, ex.toString());
             return;
         }
 
@@ -383,7 +439,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     .setAutoCancel(true);
         }
 
-        Log.d(MainActivity.class.getSimpleName(), "Progress : " + progress);
+        Log.d(TAG, "Progress : " + progress);
 
         if (progress < maxProgress) {
             if (progress == 0) {
@@ -416,8 +472,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
+    private void cancelNotificationLoading() {
+        if (mNotificationBuilder != null && mNotificationManager != null) {
+            mNotificationBuilder.setContentText(getString(R.string.notification_canceled_message));
+            mNotificationBuilder.setProgress(0, 0, false);
+            mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+        }
+    }
+
     private void showDirs() {
         mFab.show();
+
         mCalculatingProgressBar.setVisibility(View.INVISIBLE);
         mLoadingDirectoryTextView.setVisibility(View.INVISIBLE);
 
@@ -429,7 +494,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void showFiles() {
         mFab.show();
-        Log.d(MainActivity.class.getSimpleName(), "showFiles");
+
         mCalculatingProgressBar.setVisibility(View.INVISIBLE);
         mLoadingDirectoryTextView.setVisibility(View.INVISIBLE);
 
@@ -442,6 +507,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void showLoadingFiles() {
         mFab.hide();
+        mCalculatingProgressBar.setIndeterminate(true);
         mCalculatingProgressBar.setVisibility(View.VISIBLE);
         mLoadingDirectoryTextView.setVisibility(View.VISIBLE);
 

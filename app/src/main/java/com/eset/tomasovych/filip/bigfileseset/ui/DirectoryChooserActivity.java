@@ -13,7 +13,6 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -44,7 +43,6 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
 
 
         if (savedInstanceState != null) {
-            Log.d("DOPICE", "DOPICE");
             mDirsStack = (Stack<List<File>>) savedInstanceState.getSerializable(EXTRA_DIRECTORY_STACK);
             mCurrentDir = (File) savedInstanceState.getSerializable(EXTRA_DIRECTORY_PATH);
         } else {
@@ -174,6 +172,15 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
     public void onLoaderReset(Loader<List<File>> loader) {
         mAdapter.swapDirs(null);
         setTitle("");
+    }
+
+    public void onSelectDirectoryFabClick(View view) {
+        String directoryPath = (String) view.getTag();
+
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra(EXTRA_DIRECTORY_PATH, directoryPath);
+        setResult(RESULT_OK, resultIntent);
+        finish();
     }
 
 

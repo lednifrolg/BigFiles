@@ -25,7 +25,7 @@
         jumboMode="true"
         optimize="true"
         revision="26.0.0"
-        sha1="de11069a9f83a1294c47dbfad8bf0a11fc01acc6">
+        sha1="bd160cc14d820bbc495450e5239ad1d281239ea0">
         <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\transforms\dex\debug\folders\1000\10000\instant-run-bootstrap_ba0a4de800d691fd0cbeb621ebbfd1e180ea8ae1\classes.dex" />
     </item>
     <item
@@ -90,15 +90,6 @@
         revision="26.0.0"
         sha1="023ee503b631f69511e335a061ea008f8da60f40">
         <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\pre-dexed\debug\support-annotations-26.0.0-alpha1_6eccff4c334cd1b877bd16771e0aed5514702486.jar" />
-    </item>
-    <item
-        is-multidex="false"
-        jar="C:\Users\filip\.gradle\caches\modules-2\files-2.1\org.apache.commons\commons-io\1.3.2\b6dde38349ba9bb5e6ea6320531eae969985dae5\commons-io-1.3.2.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="26.0.0"
-        sha1="b6dde38349ba9bb5e6ea6320531eae969985dae5">
-        <dex dex="C:\Users\filip\Documents\GitHub\BigFilesEset\app\build\intermediates\pre-dexed\debug\commons-io-1.3.2_2a43768e135677ffac646eaf22f730e2295ccbfa.jar" />
     </item>
     <item
         is-multidex="false"
