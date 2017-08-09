@@ -23,14 +23,14 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
     private Context mContext;
     public List<File> mDirs;
     private boolean mIsDirectoryChooser;
-    public HashMap<String, Boolean> directoriesStateMap;
+    private HashMap<String, Boolean> mDirectoriesStateMap;
 
 
     public DirectoryListAdapter(Context context, List<File> mFiles, boolean isDirectoryChooser) {
         this.mContext = context;
         this.mDirs = mFiles;
         this.mIsDirectoryChooser = isDirectoryChooser;
-        directoriesStateMap = new HashMap<>();
+        mDirectoriesStateMap = new HashMap<>();
     }
 
     @Override
@@ -63,7 +63,7 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
             holder.directorySelectedCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    directoriesStateMap.put(mDirs.get(position).getAbsolutePath(), b);
+                    mDirectoriesStateMap.put(mDirs.get(position).getAbsolutePath(), b);
                 }
             });
         }
@@ -87,6 +87,10 @@ public class DirectoryListAdapter extends RecyclerView.Adapter<DirectoryListAdap
             mDirs.add(dir);
             notifyDataSetChanged();
         }
+    }
+
+    public HashMap<String, Boolean> getDirectoriesStateMap() {
+        return (HashMap<String, Boolean>) mDirectoriesStateMap.clone();
     }
 
     @Override

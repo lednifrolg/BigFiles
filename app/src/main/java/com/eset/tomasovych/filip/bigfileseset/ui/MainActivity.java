@@ -318,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public List<File> loadInBackground() {
                 if (id == FILES_LOADER_ID) {
-                    return mFilesScanner.getLargestFiles(numberOfFiles, mSelectedDirectories, mDirectoryListAdapter.directoriesStateMap);
+                    return mFilesScanner.getLargestFiles(numberOfFiles, mSelectedDirectories, mDirectoryListAdapter.getDirectoriesStateMap());
                 } else if (id == SAVED_FILES_LOADER_ID) {
                     return loadSavedFiles();
                 }
