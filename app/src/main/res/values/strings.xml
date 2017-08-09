@@ -15,4 +15,5 @@
     <string name="toast_no_directories">No directories selected</string>
     <string name="notification_canceled_message">File searching cancelled</string>
     <string name="menu_about_label">About</string>
+    <string name="notification_failed_message">Searching failed</string>
 </resources>

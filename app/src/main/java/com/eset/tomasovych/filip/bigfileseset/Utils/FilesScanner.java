@@ -1,5 +1,6 @@
 package com.eset.tomasovych.filip.bigfileseset.Utils;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -9,7 +10,9 @@ import android.util.Log;
 import com.eset.tomasovych.filip.bigfileseset.ui.MainActivity;
 
 import java.io.File;
-import java.io.Serializable;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -17,12 +20,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-
+/**
+ * Utility class for searching files, directories and getting largest files
+ */
 public class FilesScanner {
 
     public static final int MESSAGE_SORT = 1;
     public static final int MESSAGE_LOAD = 2;
     private static final String TAG = FilesScanner.class.getSimpleName();
+    public static String SERIALIZED_FILES_FILE_NAME = "largest_files.ser";
+    private Context mContext;
     private int mNumOfOperations = 0;
     private int mProgressCycle = 1;
     private int mProgressIncrement = 1;
@@ -33,8 +40,9 @@ public class FilesScanner {
     private HashMap<String, Boolean> mSearchedDirectories;
     private HashMap<String, Boolean> mDirectoriesStateMap;
 
-    public FilesScanner(Handler handler) {
+    public FilesScanner(Handler handler, Context context) {
         this.mHandler = handler;
+        mContext = context;
         mSearchedDirectories = new HashMap<>();
     }
 
@@ -86,7 +94,7 @@ public class FilesScanner {
      * @param files
      * @param left  first index of the list
      * @param right last index of the list
-     * @param k     numberer of files to search for
+     * @param k     number of files to search for
      * @return List of k Largest files
      */
     private List<File> select(List<File> files, int left, int right, int k) {
@@ -274,20 +282,28 @@ public class FilesScanner {
         return files;
     }
 
-
+    /**
+     * Send progress update message and serialize largest files
+     *
+     * @param largestFiles
+     */
     private void updateProgress(List<File> largestFiles) {
         Bundle bundle = new Bundle();
         bundle.putInt(MainActivity.EXTRA_PROGRESS, mMaxProgress);
         bundle.putInt(MainActivity.EXTRA_PROGRESS_MAX, mMaxProgress);
+        bundle.putBoolean(MainActivity.EXTRA_LARGEST_FILES, true);
 
-        if (largestFiles.size() < 500) {
-            bundle.putSerializable(MainActivity.EXTRA_LARGEST_FILES, (Serializable) largestFiles);
-        }
+        // serialize files
+        saveFiles(largestFiles);
 
         sendMessage(bundle, MESSAGE_SORT);
     }
 
-
+    /**
+     * Send progress update message with current directory being searched
+     *
+     * @param dirName
+     */
     private void updateProgress(String dirName) {
         Bundle bundle = new Bundle();
         bundle.putString(MainActivity.EXTRA_DIR_CURRENT_PROGRESS, dirName);
@@ -295,7 +311,11 @@ public class FilesScanner {
         sendMessage(bundle, MESSAGE_LOAD);
     }
 
-
+    /**
+     * Send progress update message with progress value
+     *
+     * @param progressValue
+     */
     private void updateProgress(int progressValue) {
         if (mCurrentProgress + progressValue >= mMaxProgress) {
             mCurrentProgress = mMaxProgress;
@@ -310,7 +330,12 @@ public class FilesScanner {
         sendMessage(bundle, MESSAGE_SORT);
     }
 
-
+    /**
+     * Send Handler massage
+     *
+     * @param bundle
+     * @param msgWhat type of message
+     */
     private void sendMessage(Bundle bundle, int msgWhat) {
         Message msg = new Message();
         msg.what = msgWhat;
@@ -318,7 +343,13 @@ public class FilesScanner {
         mHandler.sendMessage(msg);
     }
 
-
+    /**
+     * Get N largest files using selection algorithm
+     *
+     * @param files
+     * @param numberOfFiles
+     * @return List of largest files
+     */
     private List<File> largestFilesSelection(List<File> files, int numberOfFiles) {
         if ((files.size() * 2) > mMaxProgress) {
             mProgressCycle = (int) Math.ceil((files.size() * 2) / (double) (mMaxProgress));
@@ -337,7 +368,13 @@ public class FilesScanner {
         return largestFiles;
     }
 
-
+    /**
+     * Get N largest files using priorityQueue (min-Heap)
+     *
+     * @param files
+     * @param numberOfFiles
+     * @return List of largest files
+     */
     private List<File> largestFilesMinPriorityQueue(List<File> files, int numberOfFiles) {
         int progressCycle = 1;
         int increment = 1;
@@ -384,7 +421,30 @@ public class FilesScanner {
         return files;
     }
 
+    /**
+     * Serialize and save files
+     * @param files
+     * @return
+     */
+    private boolean saveFiles(List<File> files) {
+        FileOutputStream fos = null;
+        try {
+            fos = mContext.openFileOutput(SERIALIZED_FILES_FILE_NAME, Context.MODE_PRIVATE);
+            ObjectOutputStream os = new ObjectOutputStream(fos);
+            os.writeObject(files);
+            os.close();
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
 
+        return true;
+    }
+
+    /**
+     * Helper class for comparing File objects
+     */
     private class FileComparator implements Comparator<File> {
 
         @Override

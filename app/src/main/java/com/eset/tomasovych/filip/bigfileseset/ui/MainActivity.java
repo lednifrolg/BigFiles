@@ -37,12 +37,14 @@ import com.eset.tomasovych.filip.bigfileseset.Utils.CurrentState;
 import com.eset.tomasovych.filip.bigfileseset.Utils.FilesScanner;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<File>> {
-    private static final String TAG = MainActivity.class.getSimpleName();
 
     public static final String EXTRA_NUMBER_OF_FILES = "com.eset.tomasovych.filip.NUMBER_OF_FILES";
     public static final String EXTRA_LARGEST_FILES = "com.eset.tomasovych.filip.EXTRA_LARGEST_FILES";
@@ -51,10 +53,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public static final String EXTRA_CURRENT_STATE = "com.eset.tomasovych.filip.CURRENT_STATE";
     public static final String EXTRA_DIRECTORIES = "com.eset.tomasovych.filip.DIRECTORIES";
     public static final String EXTRA_DIR_CURRENT_PROGRESS = "com.eset.tomasovych.filip.EXTRA_DIR_CURRENT_PROGRESS";
+    private static final String TAG = MainActivity.class.getSimpleName();
     private static final int MESSAGE_CANCEL = -1;
     private static final int NOTIFICATION_ID = 302;
     private static final int DIRECTORY_REQUEST_CODE = 93;
     private static final int FILES_LOADER_ID = 301;
+    private static final int SAVED_FILES_LOADER_ID = 300;
+    private final Handler mHandler = new MyHandler();
     private FilesScanner mFilesScanner;
     private int mBackPressedCounter = 0;
     private TextInputLayout mTextInputLayout;
@@ -63,69 +68,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private RecyclerView mDirectoriesRecyclerView;
     private RecyclerView mFilesRecyclerView;
     private ProgressBar mCalculatingProgressBar;
-
     private FloatingActionButton mFab;
-
     private CurrentState mCurrentState;
-
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder mNotificationBuilder;
-
-    private final Handler mHandler = new Handler() {
-
-        boolean isLoading = false;
-
-        @Override
-        public void handleMessage(Message msg) {
-            if (msg.what == MESSAGE_CANCEL) {
-                cancelNotificationLoading();
-                return;
-            }
-
-            Bundle bundle = msg.getData();
-
-            if (bundle != null) {
-                if (msg.what == FilesScanner.MESSAGE_SORT) {
-                    if (isLoading) {
-                        mCalculatingProgressBar.setIndeterminate(false);
-                        mLoadingDirectoryTextView.setText(getString(R.string.notification_text_sorting));
-                        isLoading = false;
-                    }
-
-
-                    int progress = msg.getData().getInt(EXTRA_PROGRESS);
-                    int maxProgress = msg.getData().getInt(EXTRA_PROGRESS_MAX);
-                    List<File> largestFiles = (List<File>) bundle.getSerializable(EXTRA_LARGEST_FILES);
-
-                    if (mCalculatingProgressBar.getMax() != maxProgress) {
-                        mCalculatingProgressBar.setMax(maxProgress);
-                    }
-
-                    if (progress <= maxProgress) {
-                        mCalculatingProgressBar.setProgress(progress);
-                    }
-
-                    showNotification(progress, maxProgress, largestFiles);
-                } else if (msg.what == FilesScanner.MESSAGE_LOAD) {
-
-                    if (!isLoading) {
-                        showNotification(0, 0, null);
-
-                        if (!mCalculatingProgressBar.isIndeterminate()) {
-                            mCalculatingProgressBar.setIndeterminate(true);
-
-                        }
-                        isLoading = true;
-                    }
-
-                    String loadingDir = bundle.getString(EXTRA_DIR_CURRENT_PROGRESS, "");
-                    mLoadingDirectoryTextView.setText(loadingDir);
-                }
-            }
-        }
-    };
-
-
     private DirectoryListAdapter mDirectoryListAdapter;
     private FileListAdapter mFIleFileListAdapter;
     private List<File> mSelectedDirectories;
@@ -135,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mFilesScanner = new FilesScanner(mHandler);
+        mFilesScanner = new FilesScanner(mHandler, this);
 
         mFab = (FloatingActionButton) findViewById(R.id.fab_search);
 
@@ -155,18 +101,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mFilesRecyclerView = (RecyclerView) findViewById(R.id.rv_file_list);
         mFilesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-            List<File> files = (List<File>) extras.getSerializable(EXTRA_LARGEST_FILES);
-            for (File f : files) {
-                Log.d(TAG, f.getAbsolutePath());
-            }
-            mFIleFileListAdapter = new FileListAdapter(this, files);
-            showFiles();
-        } else {
-            mFIleFileListAdapter = new FileListAdapter(this, null);
-        }
-
+        mFIleFileListAdapter = new FileListAdapter(this, null);
         mFilesRecyclerView.setAdapter(mFIleFileListAdapter);
 
         mSelectedDirectories = new ArrayList<>();
@@ -175,17 +110,26 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setUpSwipeToDeleteDirectory();
         setUpKeyboardDoneListener();
 
+        // Check if application is opened via Notification, if it is load Files from serialized objects
+        Bundle extras = getIntent().getExtras();
+        if (extras != null && extras.getBoolean(EXTRA_LARGEST_FILES, false)) {
+            getSupportLoaderManager().initLoader(SAVED_FILES_LOADER_ID, null, this);
+        }
+
         if (savedInstanceState != null) {
             loadSavedState(savedInstanceState);
         }
     }
 
+    /**
+     * Set onEditorActionListener for keyboard special button
+     */
     private void setUpKeyboardDoneListener() {
         mNumberOFFilesEditText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
                 if (id == EditorInfo.IME_ACTION_SEARCH) {
-                    searchBiggestFiles(textView);
+                    onSearchBiggestFilesClick(textView);
                     return true;
                 }
                 return false;
@@ -193,6 +137,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         });
     }
 
+    /**
+     * Setup activity based on savedInstance state
+     *
+     * @param savedInstanceState
+     */
     private void loadSavedState(Bundle savedInstanceState) {
         mCurrentState = (CurrentState) savedInstanceState.getSerializable(EXTRA_CURRENT_STATE);
         mSelectedDirectories = (List<File>) savedInstanceState.getSerializable(EXTRA_DIRECTORIES);
@@ -216,6 +165,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putSerializable(EXTRA_CURRENT_STATE, mCurrentState);
@@ -224,6 +174,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onSaveInstanceState(outState);
     }
 
+    /**
+     * Custom behavior for Back button
+     */
     @Override
     public void onBackPressed() {
         if (mCurrentState == CurrentState.FILES_LOADING) {
@@ -249,12 +202,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = getMenuInflater();
         menuInflater.inflate(R.menu.default_menu, menu);
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -267,6 +222,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
+    /**
+     * Open new dialog with About information
+     */
     private void showAboutDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
@@ -281,6 +239,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         dialog.show();
     }
 
+    /**
+     * Set ItemTouchHelper for Swipe-to-delete from chosen directories
+     */
     private void setUpSwipeToDeleteDirectory() {
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
@@ -297,9 +258,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }).attachToRecyclerView(mDirectoriesRecyclerView);
     }
 
-    public void getDirectory(View view) {
+    /**
+     * Start activity for choosing directory
+     *
+     * @param view
+     */
+    public void onChooseDirectoryClick(View view) {
         startActivityForResult(new Intent(this, DirectoryChooserActivity.class), DIRECTORY_REQUEST_CODE);
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -342,6 +309,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                         mCalculatingProgressBar.setMax(10);
                         forceLoad();
                     }
+                } else if (id == SAVED_FILES_LOADER_ID) {
+                    showLoadingFiles();
+                    forceLoad();
                 }
             }
 
@@ -349,6 +319,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public List<File> loadInBackground() {
                 if (id == FILES_LOADER_ID) {
                     return mFilesScanner.getLargestFiles(numberOfFiles, mSelectedDirectories, mDirectoryListAdapter.directoriesStateMap);
+                } else if (id == SAVED_FILES_LOADER_ID) {
+                    return loadSavedFiles();
                 }
 
                 return null;
@@ -358,6 +330,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public void deliverResult(List<File> data) {
                 if (id == FILES_LOADER_ID) {
                     files = data;
+                    super.deliverResult(data);
+                } else if (id == SAVED_FILES_LOADER_ID) {
                     super.deliverResult(data);
                 }
             }
@@ -372,6 +346,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             if (mCurrentState != CurrentState.DIRECTORIES) {
                 showFiles();
             }
+
+        } else if (loader.getId() == SAVED_FILES_LOADER_ID) {
+            if (data != null) {
+                mFIleFileListAdapter.swapFiles(data);
+                showFiles();
+            } else {
+                showDirs();
+            }
         }
     }
 
@@ -381,11 +363,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mFIleFileListAdapter.swapFiles(null);
             showDirs();
             mCalculatingProgressBar.setProgress(0);
+
+            Message cancelNotification = new Message();
+            cancelNotification.what = MESSAGE_CANCEL;
+            mHandler.sendMessage(cancelNotification);
         }
     }
 
-
-    public void searchBiggestFiles(View view) {
+    /**
+     * Onclick method for searching biggest files
+     *
+     * @param view
+     */
+    public void onSearchBiggestFilesClick(View view) {
         if (mNumberOFFilesEditText.getText().toString().isEmpty()) {
             mTextInputLayout.setError(getString(R.string.empty_input_error));
             return;
@@ -427,7 +417,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         getSupportLoaderManager().restartLoader(FILES_LOADER_ID, extra, this);
     }
 
-    private void showNotification(int progress, int maxProgress, List<File> largestFiles) {
+    /**
+     * Show and update notification progress
+     *
+     * @param progress
+     * @param maxProgress
+     * @param filesSaved
+     */
+    private void showNotification(int progress, int maxProgress, boolean filesSaved) {
         if (mNotificationBuilder == null || mNotificationManager == null) {
             mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationBuilder = new NotificationCompat.Builder(this);
@@ -452,9 +449,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mNotificationBuilder.setProgress(maxProgress, progress, true);
             mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
         } else {
-            if (largestFiles != null) {
+            if (filesSaved) {
                 Intent resultIntent = new Intent(this, MainActivity.class);
-                resultIntent.putExtra(EXTRA_LARGEST_FILES, (Serializable) largestFiles);
+                resultIntent.putExtra(EXTRA_LARGEST_FILES, true);
                 PendingIntent resultPendingIntent =
                         PendingIntent.getActivity(
                                 this,
@@ -472,11 +469,36 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
+    /**
+     * Cancel notification loading
+     */
     private void cancelNotificationLoading() {
         if (mNotificationBuilder != null && mNotificationManager != null) {
             mNotificationBuilder.setContentText(getString(R.string.notification_canceled_message));
             mNotificationBuilder.setProgress(0, 0, false);
             mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+        }
+    }
+
+    /**
+     * Load serialized files
+     *
+     * @return
+     */
+    private List<File> loadSavedFiles() {
+        try {
+            FileInputStream fis = getApplicationContext().openFileInput(FilesScanner.SERIALIZED_FILES_FILE_NAME);
+            ObjectInputStream is = new ObjectInputStream(fis);
+            List<File> largestFiles = (List<File>) is.readObject();
+            is.close();
+            fis.close();
+
+            deleteFile(FilesScanner.SERIALIZED_FILES_FILE_NAME);
+
+            return largestFiles;
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -507,6 +529,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void showLoadingFiles() {
         mFab.hide();
+
         mCalculatingProgressBar.setIndeterminate(true);
         mCalculatingProgressBar.setVisibility(View.VISIBLE);
         mLoadingDirectoryTextView.setVisibility(View.VISIBLE);
@@ -515,5 +538,61 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mDirectoriesRecyclerView.setVisibility(View.INVISIBLE);
 
         mCurrentState = CurrentState.FILES_LOADING;
+    }
+
+    /**
+     * Handler class for receiving updates from background threads and updating UI and notifications
+     */
+    private class MyHandler extends Handler {
+        boolean isLoading = false;
+
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg.what == MESSAGE_CANCEL) {
+                cancelNotificationLoading();
+                return;
+            }
+
+            Bundle bundle = msg.getData();
+
+            if (bundle != null) {
+                if (msg.what == FilesScanner.MESSAGE_SORT) {
+                    if (isLoading) {
+                        mCalculatingProgressBar.setIndeterminate(false);
+                        mLoadingDirectoryTextView.setText(getString(R.string.notification_text_sorting));
+                        isLoading = false;
+                    }
+
+
+                    int progress = msg.getData().getInt(EXTRA_PROGRESS);
+                    int maxProgress = msg.getData().getInt(EXTRA_PROGRESS_MAX);
+                    boolean filesSaved = bundle.getBoolean(EXTRA_LARGEST_FILES);
+
+                    if (mCalculatingProgressBar.getMax() != maxProgress) {
+                        mCalculatingProgressBar.setMax(maxProgress);
+                    }
+
+                    if (progress <= maxProgress) {
+                        mCalculatingProgressBar.setProgress(progress);
+                    }
+
+                    showNotification(progress, maxProgress, filesSaved);
+                } else if (msg.what == FilesScanner.MESSAGE_LOAD) {
+
+                    if (!isLoading) {
+                        showNotification(0, 0, false);
+
+                        if (!mCalculatingProgressBar.isIndeterminate()) {
+                            mCalculatingProgressBar.setIndeterminate(true);
+
+                        }
+                        isLoading = true;
+                    }
+
+                    String loadingDir = bundle.getString(EXTRA_DIR_CURRENT_PROGRESS, "");
+                    mLoadingDirectoryTextView.setText(loadingDir);
+                }
+            }
+        }
     }
 }
