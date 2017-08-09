@@ -344,26 +344,17 @@ public class FilesScanner {
     }
 
     /**
-     * Get N largest files using selection algorithm
+     * Get N largest files
      *
      * @param files
      * @param numberOfFiles
      * @return List of largest files
      */
     private List<File> largestFilesSelection(List<File> files, int numberOfFiles) {
-        if ((files.size() * 2) > mMaxProgress) {
-            mProgressCycle = (int) Math.ceil((files.size() * 2) / (double) (mMaxProgress));
-        } else if ((files.size() * 2) < mMaxProgress) {
-            mProgressIncrement = (int) Math.ceil((mMaxProgress) / (double) (files.size() * 2));
-        }
-
-
+        setupProgressVariables(files.size() * 2);
         List<File> largestFiles = select(files, 0, files.size() - 1, numberOfFiles);
 
         Log.d(TAG, "FilesSize : " + files.size() + " | Operation : " + mNumOfOperations);
-        mNumOfOperations = 0;
-        mProgressCycle = 1;
-        mProgressIncrement = 1;
 
         return largestFiles;
     }
@@ -376,37 +367,26 @@ public class FilesScanner {
      * @return List of largest files
      */
     private List<File> largestFilesMinPriorityQueue(List<File> files, int numberOfFiles) {
-        int progressCycle = 1;
-        int increment = 1;
-
-        int numOfOperations = 0;
-
-        if (files.size() > mMaxProgress) {
-            progressCycle = (int) Math.ceil(files.size() / (double) (mMaxProgress));
-        } else if (files.size() < mMaxProgress) {
-            increment = (int) Math.ceil((mMaxProgress) / (double) files.size());
-        }
-
         final PriorityQueue<File> minHeap = new PriorityQueue<>(numberOfFiles, new FileComparator());
 
         for (int i = 0; i < numberOfFiles; i++) {
-            numOfOperations++;
+            mNumOfOperations++;
             minHeap.add(files.get(i));
 
-            if (i % progressCycle == 0) {
-                updateProgress(increment);
+            if (i % mProgressCycle == 0) {
+                updateProgress(mProgressIncrement);
             }
         }
 
         for (int i = numberOfFiles; i < files.size(); i++) {
-            numOfOperations++;
+            mNumOfOperations++;
             if (files.get(i).length() > minHeap.peek().length()) {
                 minHeap.poll();
                 minHeap.add(files.get(i));
             }
 
-            if (i % progressCycle == 0) {
-                updateProgress(increment);
+            if (i % mProgressCycle == 0) {
+                updateProgress(mProgressIncrement);
             }
         }
 
@@ -414,15 +394,29 @@ public class FilesScanner {
         files.clear();
 
         while (iterator.hasNext()) {
-            numOfOperations++;
+            mNumOfOperations++;
             files.add((File) iterator.next());
         }
 
         return files;
     }
 
+    
+    private void setupProgressVariables(int size) {
+        mNumOfOperations = 0;
+        mProgressCycle = 1;
+        mProgressIncrement = 1;
+
+        if ((size) > mMaxProgress) {
+            mProgressCycle = (int) Math.ceil((size) / (double) (mMaxProgress));
+        } else if ((size) < mMaxProgress) {
+            mProgressIncrement = (int) Math.ceil((mMaxProgress) / (double) (size));
+        }
+    }
+
     /**
      * Serialize and save files
+     *
      * @param files
      * @return
      */

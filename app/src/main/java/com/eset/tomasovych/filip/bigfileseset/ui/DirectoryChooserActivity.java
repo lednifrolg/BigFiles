@@ -80,7 +80,11 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
         }
     }
 
-    // get path of a clicked directory item and swap adapter with new files
+    /**
+     * get path of a clicked directory item and swap adapter with new files
+     *
+     * @param view
+     */
     public void onDirectoryItemClick(View view) {
         TextView dirPathTextView = (TextView) view.findViewById(R.id.tv_directory_path);
         String directoryPath = (String) dirPathTextView.getTag();
@@ -90,15 +94,22 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
         loadFiles(directoryPath);
     }
 
-    // restart Loader with new directory path
+    /**
+     * restart Loader with new directory path
+     *
+     * @param directoryPath
+     */
     private void loadFiles(String directoryPath) {
         Bundle extraPath = new Bundle();
         extraPath.putString(EXTRA_DIRECTORY_PATH, directoryPath);
         getSupportLoaderManager().restartLoader(LOADER_ID, extraPath, this);
     }
 
-
-    // finish activity with proper result intent containing selected directory path
+    /**
+     * finish activity with proper result intent containing selected directory path
+     *
+     * @param view
+     */
     public void onSelectCurrentDirectoryClick(View view) {
         Intent resultIntent = new Intent();
         resultIntent.putExtra(EXTRA_DIRECTORY_PATH, mCurrentDir.getAbsolutePath());
@@ -107,8 +118,9 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
     }
 
 
-    // check if Files stack is empty
-    // if is finish activity, else pop previous Files from stack
+    /**
+     * Custom back button behavior
+     */
     @Override
     public void onBackPressed() {
         if (mDirsStack.empty()) {
@@ -174,6 +186,11 @@ public class DirectoryChooserActivity extends AppCompatActivity implements Loade
         setTitle("");
     }
 
+    /**
+     * Select directory and return to MainActivity
+     *
+     * @param view
+     */
     public void onSelectDirectoryFabClick(View view) {
         String directoryPath = (String) view.getTag();
 
