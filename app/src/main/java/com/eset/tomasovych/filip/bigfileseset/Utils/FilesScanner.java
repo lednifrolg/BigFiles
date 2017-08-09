@@ -401,7 +401,7 @@ public class FilesScanner {
         return files;
     }
 
-    
+
     private void setupProgressVariables(int size) {
         mNumOfOperations = 0;
         mProgressCycle = 1;
